@@ -9,8 +9,8 @@ interface Group {
 
 const GROUPS: Group[] = [
   {
-    name: "Reindeer Names",
-    words: ["comet", "cupid", "donner", "blitzen"],
+    name: "Four-legged Cuties",
+    words: ["cedar", "sadie", "leo", "gus"],
     color: "#000",
     bgColor: "#f9df6d", // yellow
   },
@@ -129,7 +129,7 @@ export default function Tammy() {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>Connect fours</h1>
+      <h1 style={styles.title}>Family connection</h1>
       <p style={styles.subtitle}>Find groups of four related words</p>
 
       {/* Mistakes indicator */}
