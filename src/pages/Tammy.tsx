@@ -129,7 +129,7 @@ export default function Tammy() {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>Connections</h1>
+      <h1 style={styles.title}>Connect fours</h1>
       <p style={styles.subtitle}>Find groups of four related words</p>
 
       {/* Mistakes indicator */}
