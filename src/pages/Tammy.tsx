@@ -60,6 +60,16 @@ export default function Tammy() {
   const isGameOver = mistakes >= maxMistakes;
   const isWinner = solvedGroups.length === GROUPS.length;
 
+  const resetGame = () => {
+    const newWords = shuffleArray(GROUPS.flatMap((g) => g.words));
+    setRemainingWords(newWords);
+    setSelectedWords([]);
+    setSolvedGroups([]);
+    setMistakes(0);
+    setShakeWords(false);
+    setMessage(null);
+  };
+
   const handleWordClick = (word: string) => {
     if (isGameOver || isWinner) return;
 
@@ -188,21 +198,8 @@ export default function Tammy() {
       )}
 
       {isGameOver && !isWinner && (
-        <div style={styles.gameOverContainer}>
-          <div style={styles.gameOverMessage}>Game Over! The answers were:</div>
-          {GROUPS.filter((g) => !solvedGroups.includes(g)).map((group) => (
-            <div
-              key={group.name}
-              style={{
-                ...styles.solvedGroup,
-                backgroundColor: group.bgColor,
-                color: group.color,
-              }}
-            >
-              <div style={styles.groupName}>{group.name}</div>
-              <div style={styles.groupWords}>{group.words.join(", ")}</div>
-            </div>
-          ))}
+        <div style={styles.gameOverMessage}>
+          Game Over! Better luck next time!
         </div>
       )}
 
@@ -239,7 +236,7 @@ export default function Tammy() {
       {/* Play again button */}
       {(isWinner || isGameOver) && (
         <button
-          onClick={() => window.location.reload()}
+          onClick={resetGame}
           style={{ ...styles.controlButton, ...styles.submitButton, marginTop: 20 }}
         >
           Play Again
