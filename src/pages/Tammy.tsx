@@ -55,6 +55,7 @@ export default function Tammy() {
   const [mistakes, setMistakes] = useState(0);
   const [shakeWords, setShakeWords] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [animatingGroup, setAnimatingGroup] = useState<string | null>(null);
 
   const maxMistakes = 4;
   const isGameOver = mistakes >= maxMistakes;
@@ -68,6 +69,7 @@ export default function Tammy() {
     setMistakes(0);
     setShakeWords(false);
     setMessage(null);
+    setAnimatingGroup(null);
   };
 
   const handleWordClick = (word: string) => {
@@ -97,6 +99,8 @@ export default function Tammy() {
       );
       setSelectedWords([]);
       setMessage(null);
+      setAnimatingGroup(matchingGroup.name);
+      setTimeout(() => setAnimatingGroup(null), 600);
     } else {
       // Check if 3 out of 4 are correct
       const almostGroup = GROUPS.find(
@@ -129,7 +133,7 @@ export default function Tammy() {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>Family connection</h1>
+      <h1 style={styles.title}>Connect fours</h1>
       <p style={styles.subtitle}>Find groups of four related words</p>
 
       {/* Mistakes indicator */}
@@ -153,6 +157,7 @@ export default function Tammy() {
         {solvedGroups.map((group) => (
           <div
             key={group.name}
+            className={animatingGroup === group.name ? "group-found" : ""}
             style={{
               ...styles.solvedGroup,
               backgroundColor: group.bgColor,
@@ -366,13 +371,31 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
 };
 
-// Add keyframe animation for shake
+// Add keyframe animations
 const styleSheet = document.createElement("style");
 styleSheet.textContent = `
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-5px); }
     75% { transform: translateX(5px); }
+  }
+  
+  @keyframes groupFound {
+    0% {
+      transform: translateY(-20px) scale(0.8);
+      opacity: 0;
+    }
+    60% {
+      transform: translateY(5px) scale(1.05);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+  }
+  
+  .group-found {
+    animation: groupFound 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 `;
 document.head.appendChild(styleSheet);
