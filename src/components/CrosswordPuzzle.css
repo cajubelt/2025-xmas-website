@@ -1,0 +1,458 @@
+/* Crossword Puzzle Styles */
+@import url('https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&display=swap');
+
+.crossword-container {
+  font-family: 'Franklin Gothic', 'Libre Franklin', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #fff;
+  min-height: 100vh;
+  color: #121212;
+  width: 100%;
+}
+
+.crossword-wrapper {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Header */
+.crossword-header {
+  text-align: left;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.crossword-header-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.crossword-header h1 {
+  font-family: 'Franklin Gothic', 'Libre Franklin', Georgia, serif;
+  font-size: 42px;
+  font-weight: 700;
+  color: #121212;
+  margin: 0 0 4px 0;
+  line-height: 1.1;
+}
+
+.crossword-date {
+  font-size: 16px;
+  color: #121212;
+  font-weight: 400;
+}
+
+.crossword-byline {
+  font-size: 16px;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* Note Banner */
+.crossword-note-banner {
+  background: #f7f7f7;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  border: 1px solid rgba(218, 218, 218, 1);
+}
+
+.crossword-note-label {
+  font-weight: 700;
+  font-size: 14px;
+  color: #121212;
+  margin-bottom: 6px;
+}
+
+.crossword-note-content {
+  font-family: Georgia, serif;
+  font-size: 15px;
+  color: rgba(51, 51, 51, 1);
+  line-height: 1.6;
+  font-style: italic;
+}
+
+/* Toolbar */
+.crossword-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #dadada;
+  margin-bottom: 24px;
+}
+
+.crossword-toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.crossword-timer {
+  font-size: 16px;
+  font-weight: 500;
+  color: #121212;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.crossword-timer-icon {
+  width: 18px;
+  height: 18px;
+  opacity: 0.7;
+}
+
+.crossword-timer-display {
+  min-width: 50px;
+  display: inline-block;
+}
+
+.crossword-toolbar-btn {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: #121212;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.crossword-toolbar-btn:hover {
+  background: #f0f0f0;
+}
+
+/* Main Layout */
+.crossword-game-layout {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+/* Crossword Panel */
+.crossword-panel {
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.crossword-current-clue {
+  background: #e8f4fc;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: 4px;
+  min-height: 48px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.crossword-current-clue-number {
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.crossword-current-clue-text {
+  color: #121212;
+}
+
+.crossword-grid {
+  display: grid;
+  gap: 0;
+  width: fit-content;
+  border: 2px solid #121212;
+}
+
+.crossword-cell {
+  width: 36px;
+  height: 36px;
+  position: relative;
+  border: 1px solid #121212;
+}
+
+.crossword-cell.empty {
+  background: #121212;
+}
+
+.crossword-cell.active {
+  background: #fff;
+}
+
+.crossword-cell.highlighted {
+  background: #a7d8ff !important;
+}
+
+.crossword-cell.selected {
+  background: #ffda00 !important;
+}
+
+.crossword-cell.correct {
+  background: #d4edda !important;
+}
+
+.crossword-cell.incorrect {
+  background: #f8d7da !important;
+}
+
+.crossword-cell-number {
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #121212;
+  z-index: 2;
+  line-height: 1;
+}
+
+.crossword-cell input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 500;
+  font-family: 'Franklin Gothic', 'Libre Franklin', sans-serif;
+  text-transform: uppercase;
+  color: #121212;
+  outline: none;
+  cursor: pointer;
+  padding: 4px 0 0 0;
+  box-sizing: border-box;
+}
+
+/* Clues Panel */
+.crossword-clues-panel {
+  flex: 1;
+  display: flex;
+  gap: 32px;
+}
+
+.crossword-clues-column {
+  flex: 1;
+  min-width: 200px;
+}
+
+.crossword-clues-column h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #121212;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #dadada;
+}
+
+.crossword-clue-item {
+  padding: 8px 10px;
+  margin-bottom: 2px;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-left: 3px solid transparent;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.crossword-clue-item:hover {
+  background: #f7f7f7;
+}
+
+.crossword-clue-item.selected {
+  background: #e8f4fc;
+  border-left-color: #a7d8ff;
+}
+
+.crossword-clue-item.completed {
+  color: #999;
+}
+
+.crossword-clue-item.completed .crossword-clue-text {
+  text-decoration: line-through;
+}
+
+.crossword-clue-item.gift-clue {
+  border: 1px solid rgba(234, 218, 174, 1);
+  border-radius: 5px;
+}
+
+.crossword-clue-item.gift-clue .crossword-clue-text::after {
+  content: ' 🎁';
+}
+
+.crossword-clue-num {
+  font-weight: 700;
+  margin-right: 8px;
+  color: #121212;
+}
+
+.crossword-clue-text {
+  color: #121212;
+}
+
+/* Success Message */
+.crossword-toast {
+  text-align: center;
+  margin-top: 20px;
+  padding: 16px 24px;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.crossword-toast.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+/* Success Modal */
+.crossword-modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+
+.crossword-modal-overlay.active {
+  display: flex;
+}
+
+.crossword-modal {
+  background: #fff;
+  padding: 40px 48px;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 400px;
+  margin: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.crossword-modal h2 {
+  font-family: 'Franklin Gothic', 'Libre Franklin', Georgia, serif;
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #121212;
+}
+
+.crossword-modal-subtitle {
+  font-size: 16px;
+  font-weight: 400;
+  color: #333;
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+
+.crossword-modal-hint {
+  display: inline-block;
+  background: linear-gradient(135deg, #fff9e6 0%, #fff0f5 100%);
+  padding: 8px 14px;
+  border-radius: 4px;
+  border-left: 3px solid #e6a800;
+  font-size: 14px;
+  margin-bottom: 28px;
+}
+
+.crossword-modal-hint strong {
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.crossword-modal-btn {
+  background: #121212;
+  color: #fff;
+  border: none;
+  padding: 16px 48px;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 50px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.crossword-modal-btn:hover {
+  background: #333;
+}
+
+/* Confetti */
+.crossword-confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.crossword-confetti {
+  position: absolute;
+  font-size: 24px;
+  user-select: none;
+  animation: crossword-confetti-fall linear forwards;
+}
+
+@keyframes crossword-confetti-fall {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .crossword-game-layout {
+    flex-direction: column;
+  }
+
+  .crossword-clues-panel {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .crossword-cell {
+    width: 32px;
+    height: 32px;
+  }
+
+  .crossword-cell input {
+    font-size: 18px;
+  }
+
+  .crossword-cell-number {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 500px) {
+  .crossword-cell {
+    width: 28px;
+    height: 28px;
+  }
+
+  .crossword-cell input {
+    font-size: 16px;
+  }
+
+  .crossword-toolbar {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .crossword-header h1 {
+    font-size: 28px;
+  }
+  
+  .crossword-header-title-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
