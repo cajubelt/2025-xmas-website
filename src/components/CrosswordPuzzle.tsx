@@ -482,7 +482,7 @@ export default function CrosswordPuzzle() {
         <div className="crossword-note-banner">
           <div className="crossword-note-label">Editors' note</div>
           <div className="crossword-note-content">
-            This is a special one-of-a-kind puzzle made just for Emily. The clues contain personal references—If you're not Emily, good luck! 🎄
+            This is a special one-of-a-kind puzzle made just for Emily. The clues contain personal references—if you're not Emily, good luck! 🎄
           </div>
         </div>
 
