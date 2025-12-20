@@ -56,6 +56,7 @@
   margin-bottom: 20px;
   border-radius: 4px;
   border: 1px solid rgba(218, 218, 218, 1);
+  text-align: left;
 }
 
 .crossword-note-label {
@@ -145,6 +146,8 @@
   min-height: 48px;
   word-wrap: break-word;
   overflow-wrap: break-word;
+  text-align: left;
+  box-sizing: border-box;
 }
 
 .crossword-current-clue-number {
@@ -243,6 +246,7 @@
   margin-bottom: 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid #dadada;
+  text-align: left;
 }
 
 .crossword-clue-item {
@@ -253,6 +257,7 @@
   border-left: 3px solid transparent;
   font-size: 14px;
   line-height: 1.4;
+  text-align: left;
 }
 
 .crossword-clue-item:hover {

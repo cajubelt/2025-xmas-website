@@ -35,7 +35,7 @@ const words: WordData[] = [
   { word: 'SILVER', row: 5, col: 5, direction: 'across', 
     clue: 'The color of tinsel on the Christmas tree', isGiftClue: true },
   { word: 'PRE', row: 6, col: 5, direction: 'across', 
-    clue: "What comes before 'nuptial'? You learned this one summer at Andrews Family Law" },
+    clue: "What comes before 'nuptial'?" },
   { word: 'FIR', row: 4, col: 6, direction: 'down', 
     clue: 'The tree that fills your home with holiday scent' },
   { word: 'LEO', row: 5, col: 7, direction: 'down', 
@@ -511,12 +511,12 @@ export default function CrosswordPuzzle() {
           <div className="crossword-panel">
             <div 
               className="crossword-current-clue" 
-              style={{ width: displayCols * 36 }}
+              style={{ width: displayCols * 36 + 4 }}
             >
               {currentSelection ? (
                 <>
                   <span className="crossword-current-clue-number">
-                    {currentSelection.displayNumber}{currentSelection.direction === 'across' ? 'A' : 'D'}
+                    {currentSelection.displayNumber}
                   </span>
                   <span className="crossword-current-clue-text">{currentSelection.clue}</span>
                 </>
