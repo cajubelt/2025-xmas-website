@@ -257,7 +257,7 @@ export default function CrosswordPuzzle() {
   const moveToNextInWord = useCallback((row: number, col: number) => {
     if (!currentSelection) return;
     
-    const { direction, word, row: startRow, col: startCol } = currentSelection;
+    const { word } = currentSelection;
     const cells = getWordCells(currentSelection);
     const currentIdx = cells.findIndex(c => c.row === row && c.col === col);
 
