@@ -508,7 +508,7 @@ export default function Richard() {
   
   const [apiKey, setApiKey] = useState(getApiKeyFromQuery());
   const [instructions, setInstructions] = useState(
-    "Move towards the closest zombie that is threatening a human. Prioritize saving humans that are closest to being killed."
+    "Move towards the human with the most zombies around them."
   );
   const [gameState, setGameState] = useState<GameState>(
     JSON.parse(JSON.stringify(initialTestCase))
