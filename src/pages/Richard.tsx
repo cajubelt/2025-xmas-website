@@ -606,12 +606,7 @@ export default function Richard() {
     if (apiKeyInput.trim()) {
       setSavedApiKey(apiKeyInput.trim());
       setApiKeySaved(true);
-      setStatus("API key saved!");
     }
-  };
-
-  const handleChangeApiKey = () => {
-    setApiKeySaved(false);
   };
 
   // Render game state
@@ -648,7 +643,6 @@ export default function Richard() {
           animationRef.current = requestAnimationFrame(gameLoop);
         } else {
           setIsRunning(false);
-          setStatus(newState.message);
         }
       } catch (e) {
         setStatus(`Algorithm error: ${e}`);
@@ -695,42 +689,26 @@ export default function Richard() {
   };
 
   const handleRun = () => {
-    if (!algorithm) {
-      setStatus("Generate an algorithm first!");
-      return;
-    }
+    if (!algorithm) return;
     setIsRunning(true);
-    setStatus("Running...");
   };
 
   const handlePause = () => {
     setIsRunning(false);
-    setStatus("Paused");
   };
 
   const handleReset = () => {
     setIsRunning(false);
     setGameState(JSON.parse(JSON.stringify(initialTestCase)));
-    setStatus("Reset to initial state");
   };
 
   const handleStep = () => {
-    if (!algorithm) {
-      setStatus("Generate an algorithm first!");
-      return;
-    }
-    if (gameState.gameOver) {
-      setStatus("Game is over. Reset to play again.");
-      return;
-    }
+    if (!algorithm || gameState.gameOver) return;
 
     try {
       const target = algorithm(gameState);
       const newState = simulateTurn(gameState, target.x, target.y);
       setGameState(newState);
-      if (newState.gameOver) {
-        setStatus(newState.message);
-      }
     } catch (e) {
       setStatus(`Algorithm error: ${e}`);
     }
@@ -759,7 +737,7 @@ export default function Richard() {
       {/* Sidebar */}
       <div style={styles.sidebar}>
         <div style={styles.sidebarContent}>
-          <h2 style={styles.sidebarTitle}>⚙️ Settings</h2>
+          <h2 style={styles.sidebarTitle}>🎯 Strategy</h2>
           
           {!apiKeySaved ? (
             /* API Key Entry Form */
@@ -793,19 +771,7 @@ export default function Richard() {
             /* Instructions and Algorithm Section */
             <>
               <div style={styles.sidebarSection}>
-                <div style={styles.apiKeyStatus}>
-                  <span style={styles.apiKeyBadge}>✓ API Key Saved</span>
-                  <button 
-                    onClick={handleChangeApiKey}
-                    style={styles.changeKeyButton}
-                  >
-                    Change
-                  </button>
-                </div>
-              </div>
-
-              <div style={styles.sidebarSection}>
-                <label style={styles.label}>Your Instructions (natural language):</label>
+                <label style={styles.label}>Your Instructions:</label>
                 <textarea
                   value={instructions}
                   onChange={(e) => setInstructions(e.target.value)}
@@ -827,9 +793,11 @@ export default function Richard() {
                 </button>
               </div>
 
+              {status && <div style={styles.status}>{status}</div>}
+
               {generatedCode && (
                 <div style={styles.sidebarSection}>
-                  <label style={styles.label}>Generated Algorithm (editable):</label>
+                  <label style={styles.label}>Generated Algorithm:</label>
                   <div style={styles.editorWrapper}>
                     <Editor
                       value={generatedCode}
@@ -879,13 +847,20 @@ export default function Richard() {
                 onClick={isRunning ? handlePause : handleRun}
                 style={{
                   ...styles.button,
-                  ...(gameState.gameOver ? styles.buttonDisabled : {})
+                  ...((gameState.gameOver || (!isRunning && !algorithm)) ? styles.buttonDisabled : {})
                 }}
-                disabled={gameState.gameOver}
+                disabled={gameState.gameOver || (!isRunning && !algorithm)}
               >
                 {isRunning ? "⏸️ Pause" : "▶️ Run"}
               </button>
-              <button onClick={handleStep} style={styles.button}>
+              <button 
+                onClick={handleStep} 
+                style={{
+                  ...styles.button,
+                  ...((!algorithm || gameState.gameOver) ? styles.buttonDisabled : {})
+                }}
+                disabled={!algorithm || gameState.gameOver}
+              >
                 ⏭️ Step
               </button>
               <button 
@@ -899,8 +874,6 @@ export default function Richard() {
                 🔄 Reset
               </button>
             </div>
-
-            {status && <div style={styles.status}>{status}</div>}
           </div>
         </div>
       </div>
@@ -930,10 +903,12 @@ const styles: Record<string, React.CSSProperties> = {
     minWidth: "280px",
     maxWidth: "400px",
     height: "100vh",
-    backgroundColor: "#0d0d1a",
-    borderRight: "1px solid #333",
+    backgroundColor: "rgba(10, 10, 20, 0.7)",
+    borderRight: "1px solid rgba(255, 255, 255, 0.1)",
     overflowY: "auto",
     flexShrink: 0,
+    backdropFilter: "blur(10px)",
+    WebkitBackdropFilter: "blur(10px)",
   },
   sidebarContent: {
     padding: "20px",
@@ -1064,13 +1039,13 @@ const styles: Record<string, React.CSSProperties> = {
     opacity: 0.6,
   },
   status: {
-    marginTop: "15px",
+    marginBottom: "15px",
     padding: "10px",
-    backgroundColor: "#2a2a4e",
+    backgroundColor: "rgba(0, 255, 255, 0.1)",
     borderRadius: "4px",
+    border: "1px solid rgba(0, 255, 255, 0.3)",
     color: "#00ffff",
-    textAlign: "center",
-    maxWidth: "100%",
+    fontSize: "13px",
   },
   editorWrapper: {
     backgroundColor: "#1d1f21",
@@ -1090,28 +1065,5 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#666",
     marginTop: "10px",
     fontStyle: "italic",
-  },
-  apiKeyStatus: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "10px",
-    backgroundColor: "rgba(0, 255, 100, 0.1)",
-    borderRadius: "4px",
-    border: "1px solid rgba(0, 255, 100, 0.3)",
-  },
-  apiKeyBadge: {
-    color: "#00ff64",
-    fontSize: "14px",
-    fontWeight: "bold",
-  },
-  changeKeyButton: {
-    padding: "4px 8px",
-    borderRadius: "4px",
-    border: "1px solid #444",
-    backgroundColor: "transparent",
-    color: "#888",
-    fontSize: "12px",
-    cursor: "pointer",
   },
 };
