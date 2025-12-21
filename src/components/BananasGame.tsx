@@ -374,9 +374,10 @@ export default function BananasGame() {
             <button 
               className="bananas-draw-btn" 
               onClick={drawOneTile}
-              disabled={pool.length === 0}
+              disabled={pool.length === 0 || handTiles.length > 0}
+              title={handTiles.length > 0 ? "Place all tiles on the board before peeling" : ""}
             >
-              Peel ({pool.length} left)
+              {handTiles.length > 0 ? "Place tiles first!" : `Peel (${pool.length} left)`}
             </button>
           )}
           <p className="bananas-hint">Drag tiles to Dump to exchange for 3 new tiles • Drag the board to pan</p>
