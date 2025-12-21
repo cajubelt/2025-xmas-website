@@ -1,4 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import Editor from "react-simple-code-editor";
+import Prism from "prismjs";
+import "prismjs/components/prism-javascript";
+import "prismjs/themes/prism-tomorrow.css";
 
 // ============= TYPES =============
 interface Human {
@@ -665,12 +669,17 @@ export default function Richard() {
         {generatedCode && (
           <div style={styles.codeSection}>
             <label style={styles.label}>Generated Algorithm (editable):</label>
-            <textarea
-              value={generatedCode}
-              onChange={(e) => handleCodeChange(e.target.value)}
-              style={styles.codeTextarea}
-              spellCheck={false}
-            />
+            <div style={styles.editorWrapper}>
+              <Editor
+                value={generatedCode}
+                onValueChange={handleCodeChange}
+                highlight={(code) =>
+                  Prism.highlight(code, Prism.languages.javascript, "javascript")
+                }
+                padding={15}
+                style={styles.editor}
+              />
+            </div>
           </div>
         )}
       </div>
@@ -798,37 +807,17 @@ const styles: Record<string, React.CSSProperties> = {
   codeSection: {
     marginTop: "15px",
   },
-  code: {
-    backgroundColor: "#0a0a1e",
-    padding: "15px",
+  editorWrapper: {
+    backgroundColor: "#1d1f21",
     borderRadius: "4px",
-    overflow: "auto",
-    fontSize: "12px",
-    color: "#00ff00",
-    maxHeight: "200px",
-    textAlign: "left",
-    whiteSpace: "pre",
-    fontFamily: "monospace",
-    lineHeight: "1.5",
-    margin: 0,
-  },
-  codeTextarea: {
-    backgroundColor: "#0a0a1e",
-    padding: "15px",
-    borderRadius: "4px",
-    overflow: "auto",
-    fontSize: "12px",
-    color: "#00ff00",
-    maxHeight: "200px",
-    textAlign: "left",
-    whiteSpace: "pre",
-    fontFamily: "monospace",
-    lineHeight: "1.5",
-    margin: 0,
-    width: "100%",
     border: "1px solid #444",
-    resize: "vertical",
-    boxSizing: "border-box",
+    overflow: "auto",
+    maxHeight: "300px",
+  },
+  editor: {
+    fontFamily: '"Fira Code", "Fira Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace',
+    fontSize: "13px",
+    lineHeight: "1.5",
     minHeight: "100px",
   },
   rules: {
