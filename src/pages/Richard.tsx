@@ -18,7 +18,7 @@ interface Zombie {
 }
 
 interface GameState {
-  ash: { x: number; y: number };
+  rich: { x: number; y: number };
   humans: Human[];
   zombies: Zombie[];
   score: number;
@@ -31,8 +31,8 @@ interface GameState {
 // ============= CONSTANTS =============
 const GAME_WIDTH = 16000;
 const GAME_HEIGHT = 9000;
-const ASH_SPEED = 1000;
-const ASH_RANGE = 2000;
+const RICH_SPEED = 1000;
+const RICH_RANGE = 2000;
 const ZOMBIE_SPEED = 400;
 
 // Canvas display scaling
@@ -43,7 +43,7 @@ const SCALE_Y = CANVAS_HEIGHT / GAME_HEIGHT;
 
 // ============= HARDCODED TEST CASE =============
 const initialTestCase: GameState = {
-  ash: { x: 8000, y: 4500 },
+  rich: { x: 8000, y: 4500 },
   humans: [
     { id: 0, x: 2000, y: 2000, alive: true },
     { id: 1, x: 14000, y: 7000, alive: true },
@@ -88,10 +88,10 @@ function moveTowards(
 function findClosestHuman(
   zombie: Zombie,
   humans: Human[],
-  ash: { x: number; y: number }
+  rich: { x: number; y: number }
 ): { x: number; y: number } {
-  let closest = { x: ash.x, y: ash.y };
-  let minDist = distance(zombie.x, zombie.y, ash.x, ash.y);
+  let closest = { x: rich.x, y: rich.y };
+  let minDist = distance(zombie.x, zombie.y, rich.x, rich.y);
 
   for (const human of humans) {
     if (!human.alive) continue;
@@ -121,7 +121,7 @@ function simulateTurn(
   // 1. Zombies move towards their targets
   for (const zombie of newState.zombies) {
     if (!zombie.alive) continue;
-    const target = findClosestHuman(zombie, newState.humans, newState.ash);
+    const target = findClosestHuman(zombie, newState.humans, newState.rich);
     const newPos = moveTowards(
       zombie.x,
       zombie.y,
@@ -133,25 +133,25 @@ function simulateTurn(
     zombie.y = newPos.y;
   }
 
-  // 2. Ash moves towards his target
-  const ashNewPos = moveTowards(
-    newState.ash.x,
-    newState.ash.y,
+  // 2. Rich moves towards his target
+  const richNewPos = moveTowards(
+    newState.rich.x,
+    newState.rich.y,
     targetX,
     targetY,
-    ASH_SPEED
+    RICH_SPEED
   );
-  newState.ash.x = ashNewPos.x;
-  newState.ash.y = ashNewPos.y;
+  newState.rich.x = richNewPos.x;
+  newState.rich.y = richNewPos.y;
 
-  // 3. Any zombie within range of Ash is destroyed
+  // 3. Any zombie within range of Rich is destroyed
   const aliveHumans = newState.humans.filter((h) => h.alive).length;
   let zombiesKilledThisTurn = 0;
 
   for (const zombie of newState.zombies) {
     if (!zombie.alive) continue;
-    const dist = distance(newState.ash.x, newState.ash.y, zombie.x, zombie.y);
-    if (dist <= ASH_RANGE) {
+    const dist = distance(newState.rich.x, newState.rich.y, zombie.x, zombie.y);
+    if (dist <= RICH_RANGE) {
       zombie.alive = false;
       zombiesKilledThisTurn++;
       // Score: humans² × 10 × fibonacci multiplier
@@ -176,7 +176,7 @@ function simulateTurn(
   // Update zombie next positions
   for (const zombie of newState.zombies) {
     if (!zombie.alive) continue;
-    const target = findClosestHuman(zombie, newState.humans, newState.ash);
+    const target = findClosestHuman(zombie, newState.humans, newState.rich);
     const nextPos = moveTowards(
       zombie.x,
       zombie.y,
@@ -232,14 +232,14 @@ function renderGame(
     ctx.stroke();
   }
 
-  // Draw Ash's range
+  // Draw Rich's range
   ctx.strokeStyle = "rgba(0, 255, 255, 0.3)";
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(
-    state.ash.x * SCALE_X,
-    state.ash.y * SCALE_Y,
-    ASH_RANGE * SCALE_X,
+    state.rich.x * SCALE_X,
+    state.rich.y * SCALE_Y,
+    RICH_RANGE * SCALE_X,
     0,
     Math.PI * 2
   );
@@ -250,7 +250,7 @@ function renderGame(
     ctx.strokeStyle = "rgba(0, 255, 255, 0.5)";
     ctx.setLineDash([5, 5]);
     ctx.beginPath();
-    ctx.moveTo(state.ash.x * SCALE_X, state.ash.y * SCALE_Y);
+    ctx.moveTo(state.rich.x * SCALE_X, state.rich.y * SCALE_Y);
     ctx.lineTo(targetX * SCALE_X, targetY * SCALE_Y);
     ctx.stroke();
     ctx.setLineDash([]);
@@ -296,14 +296,14 @@ function renderGame(
     );
   }
 
-  // Draw Ash
+  // Draw Rich
   ctx.fillStyle = "#00ffff";
   ctx.beginPath();
-  ctx.arc(state.ash.x * SCALE_X, state.ash.y * SCALE_Y, 12, 0, Math.PI * 2);
+  ctx.arc(state.rich.x * SCALE_X, state.rich.y * SCALE_Y, 12, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = "#ffffff";
   ctx.font = "bold 12px Arial";
-  ctx.fillText("ASH", state.ash.x * SCALE_X - 14, state.ash.y * SCALE_Y - 16);
+  ctx.fillText("RICH", state.rich.x * SCALE_X - 14, state.rich.y * SCALE_Y - 16);
 
   // Draw HUD
   ctx.fillStyle = "#ffffff";
@@ -334,28 +334,28 @@ function renderGame(
 }
 
 // ============= CLAUDE API INTEGRATION =============
-const SYSTEM_PROMPT = `You are a game AI programmer. You will write JavaScript code to control "Ash" in a zombie survival game.
+const SYSTEM_PROMPT = `You are a game AI programmer. You will write JavaScript code to control "Rich" in a zombie survival game.
 
 GAME RULES:
 - Game zone: 16000 units wide × 9000 units high
-- Ash moves 1000 units per turn towards target
-- Ash kills zombies within 2000 units at end of turn
-- Zombies move 400 units per turn towards nearest human (including Ash)
+- Rich moves 1000 units per turn towards target
+- Rich kills zombies within 2000 units at end of turn
+- Zombies move 400 units per turn towards nearest human (including Rich)
 - Zombies kill humans they land on
 - Win: Destroy all zombies with at least 1 human alive
-- Lose: All humans (except Ash) die
+- Lose: All humans (except Rich) die
 
 SCORING:
 - Per zombie: (alive humans)² × 10
 - Multiple kills same turn: Fibonacci multiplier (1, 2, 3, 5, 8...)
 
 YOUR TASK:
-Write a JavaScript function that takes the game state and returns {x, y} coordinates for Ash to move towards.
+Write a JavaScript function that takes the game state and returns {x, y} coordinates for Rich to move towards.
 
 Function signature:
 \`\`\`javascript
-function getAshTarget(state) {
-  // state.ash = {x, y}
+function getRichTarget(state) {
+  // state.rich = {x, y}
   // state.humans = [{id, x, y, alive}, ...]
   // state.zombies = [{id, x, y, xNext, yNext, alive}, ...]
   // state.score, state.turn
@@ -388,7 +388,7 @@ async function callClaudeAPI(
       messages: [
         {
           role: "user",
-          content: `Write a getAshTarget function based on these instructions:\n\n${userInstructions}`,
+          content: `Write a getRichTarget function based on these instructions:\n\n${userInstructions}`,
         },
       ],
     }),
@@ -403,21 +403,25 @@ async function callClaudeAPI(
   return data.content[0].text;
 }
 
+function cleanCodeFromMarkdown(code: string): string {
+  // Extract function from code block if present
+  const codeBlockMatch = code.match(/```(?:javascript|js)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    return codeBlockMatch[1].trim();
+  }
+  return code.trim();
+}
+
 function parseAlgorithm(
   code: string
 ): (state: GameState) => { x: number; y: number } {
-  // Extract function from code block if present
-  let cleanCode = code;
-  const codeBlockMatch = code.match(/```(?:javascript|js)?\s*([\s\S]*?)```/);
-  if (codeBlockMatch) {
-    cleanCode = codeBlockMatch[1];
-  }
+  const cleanCode = cleanCodeFromMarkdown(code);
 
   // Create function with distance helper available
   const wrappedCode = `
     const distance = (x1, y1, x2, y2) => Math.sqrt((x2-x1)**2 + (y2-y1)**2);
     ${cleanCode}
-    return getAshTarget;
+    return getRichTarget;
   `;
 
   try {
@@ -522,7 +526,8 @@ export default function Richard() {
     setStatus("Generating algorithm with Claude...");
     try {
       const code = await callClaudeAPI(apiKey, instructions);
-      setGeneratedCode(code);
+      const cleanCode = cleanCodeFromMarkdown(code);
+      setGeneratedCode(cleanCode);
       const algo = parseAlgorithm(code);
       setAlgorithm(() => algo);
       setStatus("Algorithm generated! Click Run to start.");
@@ -592,7 +597,7 @@ export default function Richard() {
 
         <div style={styles.legend}>
           <span style={styles.legendItem}>
-            <span style={{ ...styles.dot, backgroundColor: "#00ffff" }} /> Ash
+            <span style={{ ...styles.dot, backgroundColor: "#00ffff" }} /> Rich
           </span>
           <span style={styles.legendItem}>
             <span style={{ ...styles.dot, backgroundColor: "#00ff00" }} /> Humans
@@ -620,7 +625,7 @@ export default function Richard() {
           <textarea
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
-            placeholder="Describe how Ash should move to defeat zombies and save humans..."
+            placeholder="Describe how Rich should move to defeat zombies and save humans..."
             style={styles.textarea}
             rows={4}
           />
@@ -657,7 +662,7 @@ export default function Richard() {
       <div style={styles.rules}>
         <h3>📜 Game Rules</h3>
         <ul style={styles.rulesList}>
-          <li>Ash moves 1000 units/turn, kills zombies within 2000 units</li>
+          <li>Rich moves 1000 units/turn, kills zombies within 2000 units</li>
           <li>Zombies move 400 units/turn towards nearest human</li>
           <li>Win: Kill all zombies with at least 1 human alive</li>
           <li>Score: (humans alive)² × 10 per zombie (Fibonacci bonus for combos!)</li>
