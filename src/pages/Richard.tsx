@@ -53,6 +53,7 @@ const getRandomHumanEmoji = () => Math.random() < 0.5 ? "🙍‍♂️" : "🙍�
 interface LevelConfig {
   name: string;
   createInitialState: () => GameState;
+  testAll?: boolean;
 }
 
 const LEVELS: LevelConfig[] = [
@@ -121,6 +122,30 @@ const LEVELS: LevelConfig[] = [
     }),
   },
   {
+    name: "Level 4",
+    createInitialState: () => ({
+      rich: { x: 10000, y: 4500 },
+      humans: [
+        { id: 0, x: 14000, y: 4500, alive: true, emoji: getRandomHumanEmoji() },
+        { id: 1, x: 5000, y: 6000, alive: true, emoji: getRandomHumanEmoji() },
+        { id: 2, x: 3000, y: 2000, alive: true, emoji: getRandomHumanEmoji() },
+
+      ],
+      zombies: [
+        { id: 0, x: 13000, y: 4000, xNext: 0, yNext: 0, alive: true },
+        { id: 1, x: 14000, y: 5500, xNext: 0, yNext: 0, alive: true },
+        { id: 2, x: 3000, y: 7000, xNext: 0, yNext: 0, alive: true },
+        { id: 3, x: 1000, y: 1000, xNext: 0, yNext: 0, alive: true },
+
+      ],
+      score: 0,
+      turn: 0,
+      gameOver: false,
+      won: false,
+      message: "",
+    }),
+  },
+  {
     name: "Test All",
     createInitialState: () => ({
       rich: { x: 0, y: 0 },
@@ -132,6 +157,7 @@ const LEVELS: LevelConfig[] = [
       won: false,
       message: "",
     }),
+    testAll: true,
   },
 ];
 
@@ -357,9 +383,9 @@ function renderGame(
 
   // Draw humans
   for (const human of state.humans) {
-    const emoji = human.alive ? human.emoji : "🪦";
+    const emoji = human.alive ? human.emoji : "❌";
     
-    // Draw human emoji (or tombstone if dead)
+    // Draw human emoji (or red X if dead)
     ctx.font = "24px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -370,9 +396,9 @@ function renderGame(
 
   // Draw zombies
   for (const zombie of state.zombies) {
-    const emoji = zombie.alive ? "🧟" : "❌";
+    const emoji = zombie.alive ? "🧟" : "🪦";
     
-    // Draw zombie emoji (or red X if dead)
+    // Draw zombie emoji (or tombstone if dead)
     ctx.font = "24px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -568,9 +594,9 @@ const TEST_SCRIPT = `function getRichTarget(state) {
   }
   
   let bestTarget = null;
-    let minDistanceToHuman = Infinity;
-    
-    for (const human of aliveHumans) {
+  let minDistanceToHuman = Infinity;
+  
+  for (const human of aliveHumans) {
     const distRichToHuman = distance(state.rich.x, state.rich.y, human.x, human.y);
     
     // Find the most threatening zombie for this human
@@ -653,7 +679,7 @@ export default function Richard() {
   const [completedLevels, setCompletedLevels] = useState<Set<number>>(new Set());
   
   // Test mode results (for Level 4 "Test All")
-  const [testResults, setTestResults] = useState<(boolean | null)[]>([null, null, null]);
+  const [testResults, setTestResults] = useState<(boolean | null)[]>([null, null, null, null]);
 
   const animationRef = useRef<number | null>(null);
   const lastUpdateRef = useRef<number>(0);
@@ -784,7 +810,7 @@ export default function Richard() {
     return state.won;
   };
   
-  // Run all test cases for Level 4
+  // Run all test cases for "Test All" level
   const runAllTests = () => {
     if (!algorithm) return;
     
@@ -792,14 +818,15 @@ export default function Richard() {
       LEVELS[0].createInitialState(),
       LEVELS[1].createInitialState(),
       LEVELS[2].createInitialState(),
+      LEVELS[3].createInitialState(),
     ];
     
     const results = testCases.map(testCase => runTestCase(testCase));
     setTestResults(results);
     
-    // If all tests pass, mark level 4 as completed
+    // If all tests pass, mark "Test All" level (index 4) as completed
     if (results.every(r => r)) {
-      setCompletedLevels(prev => new Set([...prev, 3]));
+      setCompletedLevels(prev => new Set([...prev, 4]));
     }
   };
 
@@ -807,7 +834,7 @@ export default function Richard() {
     if (!algorithm) return;
     
     // Special handling for Level 4 (Test All)
-    if (currentLevel === 3) {
+    if (LEVELS[currentLevel].testAll) {
       runAllTests();
       return;
     }
@@ -838,8 +865,8 @@ export default function Richard() {
     setGameState(LEVELS[levelIndex].createInitialState());
     
     // Reset test results when switching to Test All level
-    if (levelIndex === 3) {
-      setTestResults([null, null, null]);
+    if (levelIndex === 4) {
+      setTestResults([null, null, null, null]);
     }
   };
 
@@ -966,7 +993,7 @@ export default function Richard() {
           </p>
 
           <div style={styles.gameArea}>
-            {currentLevel === 3 ? (
+            {LEVELS[currentLevel].testAll ? (
               /* Test All Mode - Show test results */
               <div style={styles.testResultsContainer}>
                 <div style={styles.testResultsBox}>
@@ -1010,10 +1037,10 @@ export default function Richard() {
 
                 <div style={styles.legend}>
                   <span style={styles.legendItem}>
-                    <span style={styles.emojiLegend}>🙍 / 🪦</span> Humans
+                    <span style={styles.emojiLegend}>🙍 / ❌</span> Humans
                   </span>
                   <span style={styles.legendItem}>
-                    <span style={styles.emojiLegend}>🧟 / ❌</span> Zombies
+                    <span style={styles.emojiLegend}>🧟 / 🪦</span> Zombies
                   </span>
                 </div>
               </>
@@ -1021,7 +1048,7 @@ export default function Richard() {
 
             {/* Game Controls - directly beneath the game board */}
             <div style={styles.gameControls}>
-              {currentLevel === 3 ? (
+              {LEVELS[currentLevel].testAll ? (
                 /* Test All Mode Controls */
                 <button
                   onClick={handleRun}
