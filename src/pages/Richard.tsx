@@ -580,6 +580,17 @@ export default function Richard() {
     }
   };
 
+  const handleCodeChange = (newCode: string) => {
+    setGeneratedCode(newCode);
+    try {
+      const algo = parseAlgorithm(newCode);
+      setAlgorithm(() => algo);
+      setStatus("Algorithm updated!");
+    } catch (e) {
+      setStatus(`Invalid algorithm: ${e}`);
+    }
+  };
+
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>🧟 Vibe Code vs Zombies 🎮</h1>
@@ -653,8 +664,13 @@ export default function Richard() {
 
         {generatedCode && (
           <div style={styles.codeSection}>
-            <label style={styles.label}>Generated Algorithm:</label>
-            <pre style={styles.code}>{generatedCode}</pre>
+            <label style={styles.label}>Generated Algorithm (editable):</label>
+            <textarea
+              value={generatedCode}
+              onChange={(e) => handleCodeChange(e.target.value)}
+              style={styles.codeTextarea}
+              spellCheck={false}
+            />
           </div>
         )}
       </div>
@@ -790,6 +806,30 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "12px",
     color: "#00ff00",
     maxHeight: "200px",
+    textAlign: "left",
+    whiteSpace: "pre",
+    fontFamily: "monospace",
+    lineHeight: "1.5",
+    margin: 0,
+  },
+  codeTextarea: {
+    backgroundColor: "#0a0a1e",
+    padding: "15px",
+    borderRadius: "4px",
+    overflow: "auto",
+    fontSize: "12px",
+    color: "#00ff00",
+    maxHeight: "200px",
+    textAlign: "left",
+    whiteSpace: "pre",
+    fontFamily: "monospace",
+    lineHeight: "1.5",
+    margin: 0,
+    width: "100%",
+    border: "1px solid #444",
+    resize: "vertical",
+    boxSizing: "border-box",
+    minHeight: "100px",
   },
   rules: {
     backgroundColor: "#1a1a2e",
