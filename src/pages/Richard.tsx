@@ -55,6 +55,28 @@ interface LevelConfig {
   createInitialState: () => GameState;
 }
 
+// Hidden test case for Level 4 test mode (not shown in level list)
+const HIDDEN_TEST_CASE = (): GameState => ({
+  rich: { x: 8000, y: 4500 },
+  humans: [
+    { id: 0, x: 1000, y: 1000, alive: true, emoji: getRandomHumanEmoji() },
+    { id: 1, x: 15000, y: 8000, alive: true, emoji: getRandomHumanEmoji() },
+    { id: 2, x: 8000, y: 8000, alive: true, emoji: getRandomHumanEmoji() },
+  ],
+  zombies: [
+    { id: 0, x: 2000, y: 1500, xNext: 0, yNext: 0, alive: true },
+    { id: 1, x: 14000, y: 7500, xNext: 0, yNext: 0, alive: true },
+    { id: 2, x: 7000, y: 7000, xNext: 0, yNext: 0, alive: true },
+    { id: 3, x: 5000, y: 3000, xNext: 0, yNext: 0, alive: true },
+    { id: 4, x: 12000, y: 2000, xNext: 0, yNext: 0, alive: true },
+  ],
+  score: 0,
+  turn: 0,
+  gameOver: false,
+  won: false,
+  message: "",
+});
+
 const LEVELS: LevelConfig[] = [
   {
     name: "Level 1",
@@ -87,6 +109,7 @@ const LEVELS: LevelConfig[] = [
         { id: 0, x: 3000, y: 4000, xNext: 0, yNext: 0, alive: true },
         { id: 1, x: 1000, y: 2000, xNext: 0, yNext: 0, alive: true },
         { id: 2, x: 12000, y: 7000, xNext: 0, yNext: 0, alive: true },
+        { id: 3, x: 8000, y: 500, xNext: 0, yNext: 0, alive: true },
       ],
       score: 0,
       turn: 0,
@@ -98,15 +121,33 @@ const LEVELS: LevelConfig[] = [
   {
     name: "Level 3",
     createInitialState: () => ({
-      rich: { x: 7000, y: 700 },
+      rich: { x: 6000, y: 4500 },
       humans: [
-        { id: 0, x: 20000, y: 8500, alive: true, emoji: getRandomHumanEmoji() },
+        { id: 0, x: 2000, y: 4500, alive: true, emoji: getRandomHumanEmoji() },
+        { id: 1, x: 11000, y: 6000, alive: true, emoji: getRandomHumanEmoji() },
+        { id: 1, x: 13000, y: 2000, alive: true, emoji: getRandomHumanEmoji() },
+
       ],
       zombies: [
-        { id: 0, x: 2000, y: 500, xNext: 0, yNext: 0, alive: true },
-        { id: 1, x: 1000, y: 2000, xNext: 0, yNext: 0, alive: true },
-        { id: 2, x: 12000, y: 7000, xNext: 0, yNext: 0, alive: true },
+        { id: 0, x: 3000, y: 4000, xNext: 0, yNext: 0, alive: true },
+        { id: 1, x: 2000, y: 5500, xNext: 0, yNext: 0, alive: true },
+        { id: 2, x: 13000, y: 7000, xNext: 0, yNext: 0, alive: true },
+        { id: 3, x: 15000, y: 1000, xNext: 0, yNext: 0, alive: true },
+
       ],
+      score: 0,
+      turn: 0,
+      gameOver: false,
+      won: false,
+      message: "",
+    }),
+  },
+  {
+    name: "Test All",
+    createInitialState: () => ({
+      rich: { x: 0, y: 0 },
+      humans: [],
+      zombies: [],
       score: 0,
       turn: 0,
       gameOver: false,
@@ -225,7 +266,7 @@ function simulateTurn(
     for (const human of newState.humans) {
       if (!human.alive) continue;
       const dist = distance(zombie.x, zombie.y, human.x, human.y);
-      if (dist < ZOMBIE_SPEED) {
+      if (dist === 0) {
         human.alive = false;
       }
     }
@@ -631,6 +672,9 @@ export default function Richard() {
   // Level management
   const [currentLevel, setCurrentLevel] = useState(0);
   const [completedLevels, setCompletedLevels] = useState<Set<number>>(new Set());
+  
+  // Test mode results (for Level 4 "Test All")
+  const [testResults, setTestResults] = useState<(boolean | null)[]>([null, null, null, null]);
 
   const animationRef = useRef<number | null>(null);
   const lastUpdateRef = useRef<number>(0);
@@ -742,8 +786,54 @@ export default function Richard() {
     }
   };
 
+  // Run a single test case to completion and return whether it was won
+  const runTestCase = (initialState: GameState): boolean => {
+    if (!algorithm) return false;
+    
+    let state = JSON.parse(JSON.stringify(initialState));
+    const maxTurns = 200; // Safety limit
+    
+    while (!state.gameOver && state.turn < maxTurns) {
+      try {
+        const target = algorithm(state);
+        state = simulateTurn(state, target.x, target.y);
+      } catch {
+        return false;
+      }
+    }
+    
+    return state.won;
+  };
+  
+  // Run all test cases for Level 4
+  const runAllTests = () => {
+    if (!algorithm) return;
+    
+    const testCases = [
+      LEVELS[0].createInitialState(),
+      LEVELS[1].createInitialState(),
+      LEVELS[2].createInitialState(),
+      HIDDEN_TEST_CASE(),
+    ];
+    
+    const results = testCases.map(testCase => runTestCase(testCase));
+    setTestResults(results);
+    
+    // If all tests pass, mark level 4 as completed
+    if (results.every(r => r)) {
+      setCompletedLevels(prev => new Set([...prev, 3]));
+    }
+  };
+
   const handleRun = () => {
     if (!algorithm) return;
+    
+    // Special handling for Level 4 (Test All)
+    if (currentLevel === 3) {
+      runAllTests();
+      return;
+    }
+    
     setIsRunning(true);
   };
 
@@ -768,6 +858,11 @@ export default function Richard() {
     setIsRunning(false);
     setCurrentLevel(levelIndex);
     setGameState(LEVELS[levelIndex].createInitialState());
+    
+    // Reset test results when switching to Test All level
+    if (levelIndex === 3) {
+      setTestResults([null, null, null, null]);
+    }
   };
 
   const handleStep = () => {
@@ -893,54 +988,108 @@ export default function Richard() {
           </p>
 
           <div style={styles.gameArea}>
-            <canvas
-              ref={canvasRef}
-              width={CANVAS_WIDTH}
-              height={CANVAS_HEIGHT}
-              style={styles.canvas}
-            />
+            {currentLevel === 3 ? (
+              /* Test All Mode - Show test results */
+              <div style={styles.testResultsContainer}>
+                <div style={styles.testResultsBox}>
+                  <h3 style={styles.testResultsTitle}>Algorithm Test Results</h3>
+                  <p style={styles.testResultsSubtitle}>
+                    Run your algorithm against all levels to verify it works
+                  </p>
+                  <div style={styles.testResultsEmojis}>
+                    {testResults.map((result, index) => (
+                      <div key={index} style={styles.testResultItem}>
+                        <span style={styles.testResultEmoji}>
+                          {result === null ? "⬜" : result ? "✅" : "❌"}
+                        </span>
+                        <span style={styles.testResultLabel}>
+                          {index < 3 ? `Level ${index + 1}` : "Hidden"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {testResults.every(r => r === true) && (
+                    <div style={styles.testResultsSuccess}>
+                      🎉 All tests passed! Your algorithm is solid!
+                    </div>
+                  )}
+                  {testResults.some(r => r === false) && (
+                    <div style={styles.testResultsFailure}>
+                      Some tests failed. Refine your algorithm and try again.
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Normal Game Mode */
+              <>
+                <canvas
+                  ref={canvasRef}
+                  width={CANVAS_WIDTH}
+                  height={CANVAS_HEIGHT}
+                  style={styles.canvas}
+                />
 
-            <div style={styles.legend}>
-              <span style={styles.legendItem}>
-                <span style={styles.emojiLegend}>🙍 / 🪦</span> Humans
-              </span>
-              <span style={styles.legendItem}>
-                <span style={styles.emojiLegend}>🧟 / ❌</span> Zombies
-              </span>
-            </div>
+                <div style={styles.legend}>
+                  <span style={styles.legendItem}>
+                    <span style={styles.emojiLegend}>🙍 / 🪦</span> Humans
+                  </span>
+                  <span style={styles.legendItem}>
+                    <span style={styles.emojiLegend}>🧟 / ❌</span> Zombies
+                  </span>
+                </div>
+              </>
+            )}
 
             {/* Game Controls - directly beneath the game board */}
             <div style={styles.gameControls}>
-              <button
-                onClick={isRunning ? handlePause : handleRun}
-                style={{
-                  ...styles.button,
-                  ...((gameState.gameOver || (!isRunning && !algorithm)) ? styles.buttonDisabled : {})
-                }}
-                disabled={gameState.gameOver || (!isRunning && !algorithm)}
-              >
-                {isRunning ? "⏸️ Pause" : "▶️ Run"}
-              </button>
-              <button 
-                onClick={handleStep} 
-                style={{
-                  ...styles.button,
-                  ...((!algorithm || gameState.gameOver) ? styles.buttonDisabled : {})
-                }}
-                disabled={!algorithm || gameState.gameOver}
-              >
-                ⏭️ Step
-              </button>
-              <button 
-                onClick={handleReset} 
-                style={{
-                  ...styles.button,
-                  ...(isInitialState() ? styles.buttonDisabled : {})
-                }}
-                disabled={isInitialState()}
-              >
-                🔄 Reset
-              </button>
+              {currentLevel === 3 ? (
+                /* Test All Mode Controls */
+                <button
+                  onClick={handleRun}
+                  style={{
+                    ...styles.button,
+                    ...(!algorithm ? styles.buttonDisabled : {})
+                  }}
+                  disabled={!algorithm}
+                >
+                  🧪 Run Tests
+                </button>
+              ) : (
+                /* Normal Game Controls */
+                <>
+                  <button
+                    onClick={isRunning ? handlePause : handleRun}
+                    style={{
+                      ...styles.button,
+                      ...((gameState.gameOver || (!isRunning && !algorithm)) ? styles.buttonDisabled : {})
+                    }}
+                    disabled={gameState.gameOver || (!isRunning && !algorithm)}
+                  >
+                    {isRunning ? "⏸️ Pause" : "▶️ Run"}
+                  </button>
+                  <button 
+                    onClick={handleStep} 
+                    style={{
+                      ...styles.button,
+                      ...((!algorithm || gameState.gameOver) ? styles.buttonDisabled : {})
+                    }}
+                    disabled={!algorithm || gameState.gameOver}
+                  >
+                    ⏭️ Step
+                  </button>
+                  <button 
+                    onClick={handleReset} 
+                    style={{
+                      ...styles.button,
+                      ...(isInitialState() ? styles.buttonDisabled : {})
+                    }}
+                    disabled={isInitialState()}
+                  >
+                    🔄 Reset
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -1239,5 +1388,65 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#666",
     marginTop: "4px",
     fontStyle: "italic",
+  },
+  testResultsContainer: {
+    width: CANVAS_WIDTH,
+    height: CANVAS_HEIGHT,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: "2px solid #333",
+    borderRadius: "8px",
+    backgroundColor: "#1a1a2e",
+  },
+  testResultsBox: {
+    textAlign: "center",
+    padding: "40px",
+  },
+  testResultsTitle: {
+    fontSize: "1.5rem",
+    color: "#fff",
+    marginBottom: "10px",
+  },
+  testResultsSubtitle: {
+    fontSize: "14px",
+    color: "#888",
+    marginBottom: "30px",
+  },
+  testResultsEmojis: {
+    display: "flex",
+    justifyContent: "center",
+    gap: "30px",
+    marginBottom: "30px",
+  },
+  testResultItem: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "8px",
+  },
+  testResultEmoji: {
+    fontSize: "4rem",
+  },
+  testResultLabel: {
+    fontSize: "12px",
+    color: "#888",
+  },
+  testResultsSuccess: {
+    padding: "15px 25px",
+    backgroundColor: "rgba(0, 255, 0, 0.15)",
+    border: "1px solid rgba(0, 255, 0, 0.4)",
+    borderRadius: "8px",
+    color: "#00ff00",
+    fontSize: "16px",
+    fontWeight: "bold",
+  },
+  testResultsFailure: {
+    padding: "15px 25px",
+    backgroundColor: "rgba(255, 68, 68, 0.15)",
+    border: "1px solid rgba(255, 68, 68, 0.4)",
+    borderRadius: "8px",
+    color: "#ff4444",
+    fontSize: "14px",
   },
 };
