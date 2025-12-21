@@ -249,17 +249,6 @@ function renderGame(
   );
   ctx.stroke();
 
-  // Draw target line if exists
-  if (targetX !== undefined && targetY !== undefined) {
-    ctx.strokeStyle = "rgba(0, 255, 255, 0.5)";
-    ctx.setLineDash([5, 5]);
-    ctx.beginPath();
-    ctx.moveTo(state.rich.x * SCALE_X, state.rich.y * SCALE_Y);
-    ctx.lineTo(targetX * SCALE_X, targetY * SCALE_Y);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
   // Draw humans
   for (const human of state.humans) {
     if (!human.alive) continue;
@@ -281,14 +270,6 @@ function renderGame(
     ctx.beginPath();
     ctx.arc(zombie.x * SCALE_X, zombie.y * SCALE_Y, 10, 0, Math.PI * 2);
     ctx.fill();
-
-    // Zombie direction indicator
-    ctx.strokeStyle = "#ff8888";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(zombie.x * SCALE_X, zombie.y * SCALE_Y);
-    ctx.lineTo(zombie.xNext * SCALE_X, zombie.yNext * SCALE_Y);
-    ctx.stroke();
 
     // Zombie label
     ctx.fillStyle = "#ffffff";
