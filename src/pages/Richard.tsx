@@ -421,7 +421,14 @@ function parseAlgorithm(
 // ============= MAIN COMPONENT =============
 export default function Richard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [apiKey, setApiKey] = useState("");
+  
+  // Check for API key in query parameters
+  const getApiKeyFromQuery = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("apiKey") || params.get("api_key") || "";
+  };
+  
+  const [apiKey, setApiKey] = useState(getApiKeyFromQuery());
   const [instructions, setInstructions] = useState(
     "Move towards the closest zombie that is threatening a human. Prioritize saving humans that are closest to being killed."
   );
