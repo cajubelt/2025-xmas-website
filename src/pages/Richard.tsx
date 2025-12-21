@@ -50,23 +50,74 @@ const SCALE_Y = CANVAS_HEIGHT / GAME_HEIGHT;
 // ============= HARDCODED TEST CASE =============
 const getRandomHumanEmoji = () => Math.random() < 0.5 ? "🙍‍♂️" : "🙍‍♀️";
 
+// Level configurations
+interface LevelConfig {
+  name: string;
+  createInitialState: () => GameState;
+}
+
+const LEVELS: LevelConfig[] = [
+  {
+    name: "Level 1",
+    createInitialState: () => ({
+      rich: { x: 7000, y: 700 },
+      humans: [
+        { id: 0, x: 8000, y: 8500, alive: true, emoji: getRandomHumanEmoji(), justDied: false },
+      ],
+      zombies: [
+        { id: 0, x: 2000, y: 500, xNext: 0, yNext: 0, alive: true },
+        { id: 1, x: 1000, y: 2000, xNext: 0, yNext: 0, alive: true },
+        { id: 2, x: 12000, y: 7000, xNext: 0, yNext: 0, alive: true },
+      ],
+      score: 0,
+      turn: 0,
+      gameOver: false,
+      won: false,
+      message: "",
+    }),
+  },
+  {
+    name: "Level 2",
+    createInitialState: () => ({
+      rich: { x: 7000, y: 700 },
+      humans: [
+        { id: 0, x: 8000, y: 8500, alive: true, emoji: getRandomHumanEmoji(), justDied: false },
+      ],
+      zombies: [
+        { id: 0, x: 2000, y: 500, xNext: 0, yNext: 0, alive: true },
+        { id: 1, x: 1000, y: 2000, xNext: 0, yNext: 0, alive: true },
+        { id: 2, x: 12000, y: 7000, xNext: 0, yNext: 0, alive: true },
+      ],
+      score: 0,
+      turn: 0,
+      gameOver: false,
+      won: false,
+      message: "",
+    }),
+  },
+  {
+    name: "Level 3",
+    createInitialState: () => ({
+      rich: { x: 7000, y: 700 },
+      humans: [
+        { id: 0, x: 8000, y: 8500, alive: true, emoji: getRandomHumanEmoji(), justDied: false },
+      ],
+      zombies: [
+        { id: 0, x: 2000, y: 500, xNext: 0, yNext: 0, alive: true },
+        { id: 1, x: 1000, y: 2000, xNext: 0, yNext: 0, alive: true },
+        { id: 2, x: 12000, y: 7000, xNext: 0, yNext: 0, alive: true },
+      ],
+      score: 0,
+      turn: 0,
+      gameOver: false,
+      won: false,
+      message: "",
+    }),
+  },
+];
+
 // Configuration designed so that default strategy loses, but simple strategies can still win (e.g. move towards closest human)
-const initialTestCase: GameState = {
-  rich: { x: 7000, y: 700 },
-  humans: [
-    { id: 0, x: 8000, y: 8500, alive: true, emoji: getRandomHumanEmoji(), justDied: false },
-  ],
-  zombies: [
-    { id: 0, x: 2000, y: 500, xNext: 0, yNext: 0, alive: true },  // Decoy - closest to Rich (dist 6000)
-    { id: 1, x: 1000, y: 2000, xNext: 0, yNext: 0, alive: true },  // Decoy - closest to Rich (dist 6000)
-    { id: 2, x: 12000, y: 7000, xNext: 0, yNext: 0, alive: true }, // Threat - in path to human (dist 4000 to human)
-  ],
-  score: 0,
-  turn: 0,
-  gameOver: false,
-  won: false,
-  message: "",
-};
+const initialTestCase: GameState = LEVELS[0].createInitialState();
 
 // ============= GAME LOGIC =============
 function distance(x1: number, y1: number, x2: number, y2: number): number {
@@ -582,6 +633,10 @@ export default function Richard() {
   const [status, setStatus] = useState("");
   const [generatedCode, setGeneratedCode] = useState("");
   const [lastGeneratedInstructions, setLastGeneratedInstructions] = useState("");
+  
+  // Level management
+  const [currentLevel, setCurrentLevel] = useState(0);
+  const [completedLevels, setCompletedLevels] = useState<Set<number>>(new Set());
 
   const animationRef = useRef<number | null>(null);
   const lastUpdateRef = useRef<number>(0);
@@ -661,6 +716,13 @@ export default function Richard() {
     };
   }, [isRunning, algorithm, gameLoop]);
 
+  // Mark level as completed when game is won
+  useEffect(() => {
+    if (gameState.gameOver && gameState.won && !completedLevels.has(currentLevel)) {
+      setCompletedLevels(prev => new Set([...prev, currentLevel]));
+    }
+  }, [gameState.gameOver, gameState.won, currentLevel, completedLevels]);
+
   const handleGenerateAlgorithm = async () => {
     if (!savedApiKey) {
       setStatus("Please enter your Claude API key");
@@ -697,7 +759,21 @@ export default function Richard() {
 
   const handleReset = () => {
     setIsRunning(false);
-    setGameState(JSON.parse(JSON.stringify(initialTestCase)));
+    setGameState(LEVELS[currentLevel].createInitialState());
+  };
+
+  const handleLevelSelect = (levelIndex: number) => {
+    // Can only select: current level, completed levels, or the next level if current is completed
+    const canSelect = 
+      levelIndex === currentLevel ||
+      completedLevels.has(levelIndex) ||
+      (levelIndex === currentLevel + 1 && completedLevels.has(currentLevel));
+    
+    if (!canSelect) return;
+    
+    setIsRunning(false);
+    setCurrentLevel(levelIndex);
+    setGameState(LEVELS[levelIndex].createInitialState());
   };
 
   const handleStep = () => {
@@ -872,6 +948,49 @@ export default function Richard() {
                 🔄 Reset
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Sidebar - Levels */}
+      <div style={styles.rightSidebar}>
+        <div style={styles.sidebarContent}>
+          <h2 style={styles.sidebarTitle}>📊 Levels</h2>
+          <div style={styles.levelsContainer}>
+            {LEVELS.map((level, index) => {
+              const isCompleted = completedLevels.has(index);
+              const isCurrent = index === currentLevel;
+              const isUnlocked = 
+                index === 0 || 
+                completedLevels.has(index) || 
+                completedLevels.has(index - 1);
+              const canClick = isCurrent || isCompleted || (index === currentLevel + 1 && completedLevels.has(currentLevel));
+
+              return (
+                <div
+                  key={index}
+                  onClick={() => handleLevelSelect(index)}
+                  style={{
+                    ...styles.levelItem,
+                    ...(isCurrent ? styles.levelItemCurrent : {}),
+                    ...(isCompleted ? styles.levelItemCompleted : {}),
+                    ...(!isUnlocked ? styles.levelItemLocked : {}),
+                    ...(canClick ? styles.levelItemClickable : {}),
+                  }}
+                >
+                  <div style={styles.levelHeader}>
+                    <span style={styles.levelName}>
+                      {isCompleted && "✅ "}
+                      {level.name}
+                    </span>
+                    {isCurrent && <span style={styles.currentBadge}>Current</span>}
+                  </div>
+                  {!isUnlocked && (
+                    <div style={styles.lockedText}>🔒 Complete previous level to unlock</div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1062,6 +1181,69 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "12px",
     color: "#666",
     marginTop: "10px",
+    fontStyle: "italic",
+  },
+  rightSidebar: {
+    width: "200px",
+    minWidth: "180px",
+    height: "100vh",
+    backgroundColor: "rgba(10, 10, 20, 0.7)",
+    borderLeft: "1px solid rgba(255, 255, 255, 0.1)",
+    overflowY: "auto",
+    flexShrink: 0,
+    backdropFilter: "blur(10px)",
+    WebkitBackdropFilter: "blur(10px)",
+  },
+  levelsContainer: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+  },
+  levelItem: {
+    padding: "12px",
+    borderRadius: "8px",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+    transition: "all 0.2s ease",
+  },
+  levelItemCurrent: {
+    backgroundColor: "rgba(0, 255, 255, 0.15)",
+    border: "1px solid rgba(0, 255, 255, 0.4)",
+    boxShadow: "0 0 10px rgba(0, 255, 255, 0.2)",
+  },
+  levelItemCompleted: {
+    backgroundColor: "rgba(0, 255, 0, 0.1)",
+    border: "1px solid rgba(0, 255, 0, 0.3)",
+  },
+  levelItemLocked: {
+    opacity: 0.5,
+  },
+  levelItemClickable: {
+    cursor: "pointer",
+  },
+  levelHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "4px",
+  },
+  levelName: {
+    fontSize: "14px",
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  currentBadge: {
+    fontSize: "10px",
+    padding: "2px 6px",
+    borderRadius: "4px",
+    backgroundColor: "rgba(0, 255, 255, 0.3)",
+    color: "#00ffff",
+    fontWeight: "bold",
+  },
+  lockedText: {
+    fontSize: "11px",
+    color: "#666",
+    marginTop: "4px",
     fontStyle: "italic",
   },
 };
