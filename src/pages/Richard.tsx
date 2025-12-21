@@ -524,6 +524,7 @@ export default function Richard() {
   const [status, setStatus] = useState("");
   const [generatedCode, setGeneratedCode] = useState("");
   const [updateExisting, setUpdateExisting] = useState(false);
+  const [lastGeneratedInstructions, setLastGeneratedInstructions] = useState("");
 
   const animationRef = useRef<number | null>(null);
   const lastUpdateRef = useRef<number>(0);
@@ -616,6 +617,7 @@ export default function Richard() {
       setGeneratedCode(cleanCode);
       const algo = parseAlgorithm(code);
       setAlgorithm(() => algo);
+      setLastGeneratedInstructions(instructions);
       setStatus(updateExisting ? "Algorithm updated! Click Run to start." : "Algorithm generated! Click Run to start.");
     } catch (e) {
       setStatus(`Error: ${e}`);
@@ -675,6 +677,13 @@ export default function Richard() {
     } catch (e) {
       setStatus(`Invalid algorithm: ${e}`);
     }
+  };
+
+  // Check if game is in initial state (new or freshly reset)
+  const isInitialState = () => {
+    return gameState.turn === 0 && 
+           gameState.score === 0 && 
+           !gameState.gameOver;
   };
 
   return (
@@ -743,19 +752,37 @@ export default function Richard() {
         )}
 
         <div style={styles.buttonGroup}>
-          <button onClick={handleGenerateAlgorithm} style={styles.button}>
+          <button 
+            onClick={handleGenerateAlgorithm} 
+            style={{
+              ...styles.button,
+              ...(instructions === lastGeneratedInstructions ? styles.buttonDisabled : {})
+            }}
+            disabled={instructions === lastGeneratedInstructions}
+          >
             🤖 Generate Algorithm
           </button>
           <button
             onClick={isRunning ? handlePause : handleRun}
-            style={styles.button}
+            style={{
+              ...styles.button,
+              ...(gameState.gameOver ? styles.buttonDisabled : {})
+            }}
+            disabled={gameState.gameOver}
           >
             {isRunning ? "⏸️ Pause" : "▶️ Run"}
           </button>
           <button onClick={handleStep} style={styles.button}>
             ⏭️ Step
           </button>
-          <button onClick={handleReset} style={styles.button}>
+          <button 
+            onClick={handleReset} 
+            style={{
+              ...styles.button,
+              ...(isInitialState() ? styles.buttonDisabled : {})
+            }}
+            disabled={isInitialState()}
+          >
             🔄 Reset
           </button>
         </div>
@@ -892,6 +919,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "14px",
     cursor: "pointer",
     transition: "background-color 0.2s",
+  },
+  buttonDisabled: {
+    backgroundColor: "#2a2a3e",
+    color: "#666",
+    cursor: "not-allowed",
+    opacity: 0.6,
   },
   status: {
     marginTop: "15px",
