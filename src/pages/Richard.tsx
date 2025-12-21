@@ -260,13 +260,13 @@ function simulateTurn(
     }
   }
 
-  // 4. Zombies eat any human they share coordinates with
+  // 4. Zombies eat any human they are within 400 units of
   for (const zombie of newState.zombies) {
     if (!zombie.alive) continue;
     for (const human of newState.humans) {
       if (!human.alive) continue;
       const dist = distance(zombie.x, zombie.y, human.x, human.y);
-      if (dist === 0) {
+      if (dist <= 400) {
         human.alive = false;
       }
     }
@@ -471,7 +471,7 @@ GAME RULES:
 - Rich moves 1000 units per turn towards target
 - Rich kills zombies within 2000 units at end of turn
 - Zombies move 400 units per turn towards nearest human (including Rich)
-- Zombies kill humans they land on
+- Zombies kill humans they are within 400 units of
 - Win: Destroy all zombies with at least 1 human alive
 - Lose: All humans (except Rich) die
 
@@ -674,7 +674,7 @@ export default function Richard() {
   const [completedLevels, setCompletedLevels] = useState<Set<number>>(new Set());
   
   // Test mode results (for Level 4 "Test All")
-  const [testResults, setTestResults] = useState<(boolean | null)[]>([null, null, null, null]);
+  const [testResults, setTestResults] = useState<(boolean | null)[]>([null, null, null]);
 
   const animationRef = useRef<number | null>(null);
   const lastUpdateRef = useRef<number>(0);
@@ -813,7 +813,6 @@ export default function Richard() {
       LEVELS[0].createInitialState(),
       LEVELS[1].createInitialState(),
       LEVELS[2].createInitialState(),
-      HIDDEN_TEST_CASE(),
     ];
     
     const results = testCases.map(testCase => runTestCase(testCase));
@@ -861,7 +860,7 @@ export default function Richard() {
     
     // Reset test results when switching to Test All level
     if (levelIndex === 3) {
-      setTestResults([null, null, null, null]);
+      setTestResults([null, null, null]);
     }
   };
 
@@ -1003,7 +1002,7 @@ export default function Richard() {
                           {result === null ? "⬜" : result ? "✅" : "❌"}
                         </span>
                         <span style={styles.testResultLabel}>
-                          {index < 3 ? `Level ${index + 1}` : "Hidden"}
+                          Level {index + 1}
                         </span>
                       </div>
                     ))}
