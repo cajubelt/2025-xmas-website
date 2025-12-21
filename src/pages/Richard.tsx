@@ -567,7 +567,10 @@ export default function Richard() {
     return params.get("test") === "true";
   };
   
-  const [apiKey, setApiKey] = useState(getApiKeyFromQuery());
+  const queryApiKey = getApiKeyFromQuery();
+  const [apiKeyInput, setApiKeyInput] = useState(queryApiKey);
+  const [apiKeySaved, setApiKeySaved] = useState(!!queryApiKey);
+  const [savedApiKey, setSavedApiKey] = useState(queryApiKey);
   const [instructions, setInstructions] = useState(
     "Move towards the human with the most zombies around them."
   );
@@ -598,6 +601,18 @@ export default function Richard() {
       }
     }
   }, []);
+
+  const handleSaveApiKey = () => {
+    if (apiKeyInput.trim()) {
+      setSavedApiKey(apiKeyInput.trim());
+      setApiKeySaved(true);
+      setStatus("API key saved!");
+    }
+  };
+
+  const handleChangeApiKey = () => {
+    setApiKeySaved(false);
+  };
 
   // Render game state
   useEffect(() => {
@@ -655,7 +670,7 @@ export default function Richard() {
   }, [isRunning, algorithm, gameLoop]);
 
   const handleGenerateAlgorithm = async () => {
-    if (!apiKey) {
+    if (!savedApiKey) {
       setStatus("Please enter your Claude API key");
       return;
     }
@@ -667,7 +682,7 @@ export default function Richard() {
     setStatus("Generating algorithm with Claude...");
     try {
       const existingCode = generatedCode ? generatedCode : undefined;
-      const code = await callClaudeAPI(apiKey, instructions, existingCode);
+      const code = await callClaudeAPI(savedApiKey, instructions, existingCode);
       const cleanCode = cleanCodeFromMarkdown(code);
       setGeneratedCode(cleanCode);
       const algo = parseAlgorithm(code);
@@ -741,107 +756,152 @@ export default function Richard() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.container}>
-        <h1 style={styles.title}>🧟 Vibe Code vs Zombies 🎮</h1>
-        <p style={styles.subtitle}>
-          Write natural language instructions and let Claude create your zombie-fighting algorithm!
-        </p>
-
-        <div style={styles.gameArea}>
-          <canvas
-            ref={canvasRef}
-            width={CANVAS_WIDTH}
-            height={CANVAS_HEIGHT}
-            style={styles.canvas}
-          />
-
-          <div style={styles.legend}>
-            <span style={styles.legendItem}>
-              <span style={styles.emojiLegend}>🙍 / 🪦</span> Humans
-            </span>
-            <span style={styles.legendItem}>
-              <span style={styles.emojiLegend}>🧟 / ❌</span> Zombies
-            </span>
-          </div>
-        </div>
-
-        <div style={styles.controls}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Claude API Key:</label>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="sk-ant-..."
-              style={styles.input}
-            />
-          </div>
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Your Instructions (natural language):</label>
-            <textarea
-              value={instructions}
-              onChange={(e) => setInstructions(e.target.value)}
-              placeholder="Describe how Rich should move to defeat zombies and save humans..."
-              style={styles.textarea}
-              rows={4}
-            />
-          </div>
-
-          <div style={styles.buttonGroup}>
-            <button 
-              onClick={handleGenerateAlgorithm} 
-              style={{
-                ...styles.button,
-                ...(instructions === lastGeneratedInstructions ? styles.buttonDisabled : {})
-              }}
-              disabled={instructions === lastGeneratedInstructions}
-            >
-              {generatedCode ? "🤖 Update Algorithm" : "🤖 Generate Algorithm"}
-            </button>
-            <button
-              onClick={isRunning ? handlePause : handleRun}
-              style={{
-                ...styles.button,
-                ...(gameState.gameOver ? styles.buttonDisabled : {})
-              }}
-              disabled={gameState.gameOver}
-            >
-              {isRunning ? "⏸️ Pause" : "▶️ Run"}
-            </button>
-            <button onClick={handleStep} style={styles.button}>
-              ⏭️ Step
-            </button>
-            <button 
-              onClick={handleReset} 
-              style={{
-                ...styles.button,
-                ...(isInitialState() ? styles.buttonDisabled : {})
-              }}
-              disabled={isInitialState()}
-            >
-              🔄 Reset
-            </button>
-          </div>
-
-          {status && <div style={styles.status}>{status}</div>}
-
-          {generatedCode && (
-            <div style={styles.codeSection}>
-              <label style={styles.label}>Generated Algorithm (editable):</label>
-              <div style={styles.editorWrapper}>
-                <Editor
-                  value={generatedCode}
-                  onValueChange={handleCodeChange}
-                  highlight={(code) =>
-                    Prism.highlight(code, Prism.languages.javascript, "javascript")
-                  }
-                  padding={15}
-                  style={styles.editor}
-                />
-              </div>
+      {/* Sidebar */}
+      <div style={styles.sidebar}>
+        <div style={styles.sidebarContent}>
+          <h2 style={styles.sidebarTitle}>⚙️ Settings</h2>
+          
+          {!apiKeySaved ? (
+            /* API Key Entry Form */
+            <div style={styles.sidebarSection}>
+              <label style={styles.label}>Claude API Key:</label>
+              <input
+                type="password"
+                value={apiKeyInput}
+                onChange={(e) => setApiKeyInput(e.target.value)}
+                placeholder="sk-ant-..."
+                style={styles.input}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveApiKey()}
+              />
+              <button 
+                onClick={handleSaveApiKey}
+                style={{
+                  ...styles.button,
+                  ...styles.fullWidthButton,
+                  marginTop: "10px",
+                  ...(apiKeyInput.trim() ? {} : styles.buttonDisabled)
+                }}
+                disabled={!apiKeyInput.trim()}
+              >
+                💾 Save API Key
+              </button>
+              <p style={styles.hint}>
+                Enter your Claude API key to start generating algorithms.
+              </p>
             </div>
+          ) : (
+            /* Instructions and Algorithm Section */
+            <>
+              <div style={styles.sidebarSection}>
+                <div style={styles.apiKeyStatus}>
+                  <span style={styles.apiKeyBadge}>✓ API Key Saved</span>
+                  <button 
+                    onClick={handleChangeApiKey}
+                    style={styles.changeKeyButton}
+                  >
+                    Change
+                  </button>
+                </div>
+              </div>
+
+              <div style={styles.sidebarSection}>
+                <label style={styles.label}>Your Instructions (natural language):</label>
+                <textarea
+                  value={instructions}
+                  onChange={(e) => setInstructions(e.target.value)}
+                  placeholder="Describe how Rich should move to defeat zombies and save humans..."
+                  style={styles.textarea}
+                  rows={4}
+                />
+                <button 
+                  onClick={handleGenerateAlgorithm} 
+                  style={{
+                    ...styles.button,
+                    ...styles.fullWidthButton,
+                    marginTop: "10px",
+                    ...(instructions === lastGeneratedInstructions ? styles.buttonDisabled : {})
+                  }}
+                  disabled={instructions === lastGeneratedInstructions}
+                >
+                  {generatedCode ? "🤖 Update Algorithm" : "🤖 Generate Algorithm"}
+                </button>
+              </div>
+
+              {generatedCode && (
+                <div style={styles.sidebarSection}>
+                  <label style={styles.label}>Generated Algorithm (editable):</label>
+                  <div style={styles.editorWrapper}>
+                    <Editor
+                      value={generatedCode}
+                      onValueChange={handleCodeChange}
+                      highlight={(code) =>
+                        Prism.highlight(code, Prism.languages.javascript, "javascript")
+                      }
+                      padding={15}
+                      style={styles.editor}
+                    />
+                  </div>
+                </div>
+              )}
+            </>
           )}
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div style={styles.mainContent}>
+        <div style={styles.container}>
+          <h1 style={styles.title}>🧟 Vibe Code vs Zombies 🎮</h1>
+          <p style={styles.subtitle}>
+            Write natural language instructions and let Claude create your zombie-fighting algorithm!
+          </p>
+
+          <div style={styles.gameArea}>
+            <canvas
+              ref={canvasRef}
+              width={CANVAS_WIDTH}
+              height={CANVAS_HEIGHT}
+              style={styles.canvas}
+            />
+
+            <div style={styles.legend}>
+              <span style={styles.legendItem}>
+                <span style={styles.emojiLegend}>🙍 / 🪦</span> Humans
+              </span>
+              <span style={styles.legendItem}>
+                <span style={styles.emojiLegend}>🧟 / ❌</span> Zombies
+              </span>
+            </div>
+
+            {/* Game Controls - directly beneath the game board */}
+            <div style={styles.gameControls}>
+              <button
+                onClick={isRunning ? handlePause : handleRun}
+                style={{
+                  ...styles.button,
+                  ...(gameState.gameOver ? styles.buttonDisabled : {})
+                }}
+                disabled={gameState.gameOver}
+              >
+                {isRunning ? "⏸️ Pause" : "▶️ Run"}
+              </button>
+              <button onClick={handleStep} style={styles.button}>
+                ⏭️ Step
+              </button>
+              <button 
+                onClick={handleReset} 
+                style={{
+                  ...styles.button,
+                  ...(isInitialState() ? styles.buttonDisabled : {})
+                }}
+                disabled={isInitialState()}
+              >
+                🔄 Reset
+              </button>
+            </div>
+
+            {status && <div style={styles.status}>{status}</div>}
+          </div>
         </div>
       </div>
     </div>
@@ -853,10 +913,7 @@ const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: "100vh",
     width: "100%",
-    padding: "32px 16px",
     boxSizing: "border-box",
-    // Subtle “neon night” background: soft cyan/red glow + barely-there grid.
-    // Keeps focus on the canvas/emoji characters (all high-contrast gameplay is inside the board).
     backgroundColor: "#070812",
     backgroundImage: [
       "radial-gradient(700px 420px at 15% 10%, rgba(0, 255, 255, 0.10), rgba(0, 255, 255, 0) 60%)",
@@ -867,11 +924,42 @@ const styles: Record<string, React.CSSProperties> = {
     ].join(", "),
     backgroundAttachment: "fixed",
     display: "flex",
+  },
+  sidebar: {
+    width: "33.333%",
+    minWidth: "280px",
+    maxWidth: "400px",
+    height: "100vh",
+    backgroundColor: "#0d0d1a",
+    borderRight: "1px solid #333",
+    overflowY: "auto",
+    flexShrink: 0,
+  },
+  sidebarContent: {
+    padding: "20px",
+    fontFamily: "system-ui, -apple-system, sans-serif",
+  },
+  sidebarTitle: {
+    fontSize: "1.25rem",
+    color: "#fff",
+    marginBottom: "20px",
+    paddingBottom: "10px",
+    borderBottom: "1px solid #333",
+  },
+  sidebarSection: {
+    marginBottom: "20px",
+  },
+  mainContent: {
+    flex: 1,
+    padding: "32px 16px",
+    display: "flex",
     justifyContent: "center",
+    overflowY: "auto",
+    height: "100vh",
   },
   container: {
     maxWidth: "900px",
-    margin: "0 auto",
+    width: "100%",
     padding: "20px",
     fontFamily: "system-ui, -apple-system, sans-serif",
     borderRadius: "14px",
@@ -899,7 +987,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    marginBottom: "1.5rem",
   },
   canvas: {
     border: "2px solid #333",
@@ -916,31 +1003,25 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     gap: "5px",
     fontSize: "14px",
+    color: "#ccc",
   },
   emojiLegend: {
     fontSize: "18px",
     display: "inline-block",
   },
-  dot: {
-    width: "12px",
-    height: "12px",
-    borderRadius: "50%",
-    display: "inline-block",
-  },
-  controls: {
-    backgroundColor: "#1a1a2e",
-    padding: "20px",
-    borderRadius: "8px",
-    marginBottom: "1.5rem",
-  },
-  inputGroup: {
-    marginBottom: "15px",
+  gameControls: {
+    display: "flex",
+    gap: "10px",
+    marginTop: "15px",
+    justifyContent: "center",
+    flexWrap: "wrap",
   },
   label: {
     display: "block",
     marginBottom: "5px",
     fontWeight: "bold",
     color: "#ccc",
+    fontSize: "14px",
   },
   input: {
     width: "100%",
@@ -963,11 +1044,6 @@ const styles: Record<string, React.CSSProperties> = {
     resize: "vertical",
     boxSizing: "border-box",
   },
-  buttonGroup: {
-    display: "flex",
-    gap: "10px",
-    flexWrap: "wrap",
-  },
   button: {
     padding: "10px 20px",
     borderRadius: "4px",
@@ -977,6 +1053,9 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "14px",
     cursor: "pointer",
     transition: "background-color 0.2s",
+  },
+  fullWidthButton: {
+    width: "100%",
   },
   buttonDisabled: {
     backgroundColor: "#2a2a3e",
@@ -990,9 +1069,8 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: "#2a2a4e",
     borderRadius: "4px",
     color: "#00ffff",
-  },
-  codeSection: {
-    marginTop: "15px",
+    textAlign: "center",
+    maxWidth: "100%",
   },
   editorWrapper: {
     backgroundColor: "#1d1f21",
@@ -1006,5 +1084,34 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "13px",
     lineHeight: "1.5",
     minHeight: "100px",
+  },
+  hint: {
+    fontSize: "12px",
+    color: "#666",
+    marginTop: "10px",
+    fontStyle: "italic",
+  },
+  apiKeyStatus: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "10px",
+    backgroundColor: "rgba(0, 255, 100, 0.1)",
+    borderRadius: "4px",
+    border: "1px solid rgba(0, 255, 100, 0.3)",
+  },
+  apiKeyBadge: {
+    color: "#00ff64",
+    fontSize: "14px",
+    fontWeight: "bold",
+  },
+  changeKeyButton: {
+    padding: "4px 8px",
+    borderRadius: "4px",
+    border: "1px solid #444",
+    backgroundColor: "transparent",
+    color: "#888",
+    fontSize: "12px",
+    cursor: "pointer",
   },
 };
