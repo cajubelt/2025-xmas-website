@@ -418,14 +418,75 @@ function parseAlgorithm(
   }
 }
 
+// ============= TEST SCRIPT =============
+const TEST_SCRIPT = `function getRichTarget(state) {
+  const aliveHumans = state.humans.filter(h => h.alive);
+  const aliveZombies = state.zombies.filter(z => z.alive);
+  
+  if (aliveZombies.length === 0) {
+    return {x: state.rich.x, y: state.rich.y};
+  }
+  
+  let bestTarget = null;
+  let minTurnsToKill = Infinity;
+  
+  for (const zombie of aliveZombies) {
+    // Find closest human to this zombie
+    let closestHuman = null;
+    let minDistanceToHuman = Infinity;
+    
+    for (const human of aliveHumans) {
+      const distToHuman = distance(zombie.x, zombie.y, human.x, human.y);
+      if (distToHuman < minDistanceToHuman) {
+        minDistanceToHuman = distToHuman;
+        closestHuman = human;
+      }
+    }
+    
+    if (closestHuman) {
+      // Calculate turns until zombie kills human
+      const turnsToKillHuman = Math.ceil(minDistanceToHuman / 400);
+      
+      // Calculate turns for Rich to reach zombie
+      const distToZombie = distance(state.rich.x, state.rich.y, zombie.x, zombie.y);
+      const turnsToReachZombie = Math.ceil(distToZombie / 1000);
+      
+      // Prioritize zombies that will kill humans soonest, but Rich can still reach
+      if (turnsToKillHuman < minTurnsToKill && turnsToReachZombie <= turnsToKillHuman) {
+        minTurnsToKill = turnsToKillHuman;
+        bestTarget = zombie;
+      }
+    }
+  }
+  
+  // If no zombie is immediately threatening, go for closest zombie
+  if (!bestTarget) {
+    let minDistance = Infinity;
+    for (const zombie of aliveZombies) {
+      const dist = distance(state.rich.x, state.rich.y, zombie.x, zombie.y);
+      if (dist < minDistance) {
+        minDistance = dist;
+        bestTarget = zombie;
+      }
+    }
+  }
+  
+  return bestTarget ? {x: bestTarget.x, y: bestTarget.y} : {x: state.rich.x, y: state.rich.y};
+}`;
+
 // ============= MAIN COMPONENT =============
 export default function Richard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  // Check for API key in query parameters
+  // Check for API key and test mode in query parameters
   const getApiKeyFromQuery = () => {
     const params = new URLSearchParams(window.location.search);
     return params.get("apiKey") || params.get("api_key") || "";
+  };
+  
+  const isTestMode = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("test") === "true";
   };
   
   const [apiKey, setApiKey] = useState(getApiKeyFromQuery());
@@ -448,6 +509,20 @@ export default function Richard() {
 
   const animationRef = useRef<number | null>(null);
   const lastUpdateRef = useRef<number>(0);
+
+  // Initialize test mode if enabled
+  useEffect(() => {
+    if (isTestMode()) {
+      try {
+        setGeneratedCode(TEST_SCRIPT);
+        const algo = parseAlgorithm(TEST_SCRIPT);
+        setAlgorithm(() => algo);
+        setStatus("Test mode enabled - prepopulated algorithm loaded!");
+      } catch (e) {
+        setStatus(`Error loading test script: ${e}`);
+      }
+    }
+  }, []);
 
   // Render game state
   useEffect(() => {
