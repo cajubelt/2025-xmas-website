@@ -656,7 +656,7 @@ export default function Richard() {
   const [apiKeySaved, setApiKeySaved] = useState(!!queryApiKey);
   const [savedApiKey, setSavedApiKey] = useState(queryApiKey);
   const [instructions, setInstructions] = useState(
-    "Move towards the closest zombie."
+    ""
   );
   const [gameState, setGameState] = useState<GameState>(
     JSON.parse(JSON.stringify(initialTestCase))
