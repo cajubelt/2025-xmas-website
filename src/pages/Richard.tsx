@@ -356,8 +356,25 @@ IMPORTANT: Return ONLY the function code, no explanations. The function must be 
 
 async function callClaudeAPI(
   apiKey: string,
-  userInstructions: string
+  userInstructions: string,
+  existingAlgorithm?: string
 ): Promise<string> {
+  let userContent: string;
+  
+  if (existingAlgorithm) {
+    userContent = `Here is the existing algorithm:
+
+\`\`\`javascript
+${existingAlgorithm}
+\`\`\`
+
+Please update this algorithm based on the following instructions. Make the necessary changes while preserving working parts if possible:
+
+${userInstructions}`;
+  } else {
+    userContent = `Write a getRichTarget function based on these instructions:\n\n${userInstructions}`;
+  }
+
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -373,7 +390,7 @@ async function callClaudeAPI(
       messages: [
         {
           role: "user",
-          content: `Write a getRichTarget function based on these instructions:\n\n${userInstructions}`,
+          content: userContent,
         },
       ],
     }),
@@ -506,6 +523,7 @@ export default function Richard() {
   } | null>(null);
   const [status, setStatus] = useState("");
   const [generatedCode, setGeneratedCode] = useState("");
+  const [updateExisting, setUpdateExisting] = useState(false);
 
   const animationRef = useRef<number | null>(null);
   const lastUpdateRef = useRef<number>(0);
@@ -592,12 +610,13 @@ export default function Richard() {
 
     setStatus("Generating algorithm with Claude...");
     try {
-      const code = await callClaudeAPI(apiKey, instructions);
+      const existingCode = updateExisting && generatedCode ? generatedCode : undefined;
+      const code = await callClaudeAPI(apiKey, instructions, existingCode);
       const cleanCode = cleanCodeFromMarkdown(code);
       setGeneratedCode(cleanCode);
       const algo = parseAlgorithm(code);
       setAlgorithm(() => algo);
-      setStatus("Algorithm generated! Click Run to start.");
+      setStatus(updateExisting ? "Algorithm updated! Click Run to start." : "Algorithm generated! Click Run to start.");
     } catch (e) {
       setStatus(`Error: ${e}`);
     }
@@ -708,6 +727,20 @@ export default function Richard() {
             rows={4}
           />
         </div>
+
+        {generatedCode && (
+          <div style={styles.checkboxGroup}>
+            <label style={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={updateExisting}
+                onChange={(e) => setUpdateExisting(e.target.checked)}
+                style={styles.checkbox}
+              />
+              Update existing algorithm (instead of generating from scratch)
+            </label>
+          </div>
+        )}
 
         <div style={styles.buttonGroup}>
           <button onClick={handleGenerateAlgorithm} style={styles.button}>
@@ -892,5 +925,21 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#aaa",
     lineHeight: "1.8",
     paddingLeft: "20px",
+  },
+  checkboxGroup: {
+    marginBottom: "15px",
+  },
+  checkboxLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    color: "#ccc",
+    cursor: "pointer",
+    fontSize: "14px",
+  },
+  checkbox: {
+    width: "16px",
+    height: "16px",
+    cursor: "pointer",
   },
 };
