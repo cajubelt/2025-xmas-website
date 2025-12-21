@@ -368,7 +368,7 @@ async function callClaudeAPI(
 ${existingAlgorithm}
 \`\`\`
 
-Please update this algorithm based on the following instructions. Make the necessary changes while preserving working parts if possible:
+Based on the following instructions, you can either update the existing algorithm or write a new one from scratch - whatever best fulfills the request:
 
 ${userInstructions}`;
   } else {
@@ -523,7 +523,6 @@ export default function Richard() {
   } | null>(null);
   const [status, setStatus] = useState("");
   const [generatedCode, setGeneratedCode] = useState("");
-  const [updateExisting, setUpdateExisting] = useState(false);
   const [lastGeneratedInstructions, setLastGeneratedInstructions] = useState("");
 
   const animationRef = useRef<number | null>(null);
@@ -611,14 +610,14 @@ export default function Richard() {
 
     setStatus("Generating algorithm with Claude...");
     try {
-      const existingCode = updateExisting && generatedCode ? generatedCode : undefined;
+      const existingCode = generatedCode ? generatedCode : undefined;
       const code = await callClaudeAPI(apiKey, instructions, existingCode);
       const cleanCode = cleanCodeFromMarkdown(code);
       setGeneratedCode(cleanCode);
       const algo = parseAlgorithm(code);
       setAlgorithm(() => algo);
       setLastGeneratedInstructions(instructions);
-      setStatus(updateExisting ? "Algorithm updated! Click Run to start." : "Algorithm generated! Click Run to start.");
+      setStatus(existingCode ? "Algorithm updated! Click Run to start." : "Algorithm generated! Click Run to start.");
     } catch (e) {
       setStatus(`Error: ${e}`);
     }
@@ -737,20 +736,6 @@ export default function Richard() {
           />
         </div>
 
-        {generatedCode && (
-          <div style={styles.checkboxGroup}>
-            <label style={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={updateExisting}
-                onChange={(e) => setUpdateExisting(e.target.checked)}
-                style={styles.checkbox}
-              />
-              Update existing algorithm (instead of generating from scratch)
-            </label>
-          </div>
-        )}
-
         <div style={styles.buttonGroup}>
           <button 
             onClick={handleGenerateAlgorithm} 
@@ -760,7 +745,7 @@ export default function Richard() {
             }}
             disabled={instructions === lastGeneratedInstructions}
           >
-            🤖 Generate Algorithm
+            {generatedCode ? "🤖 Update Algorithm" : "🤖 Generate Algorithm"}
           </button>
           <button
             onClick={isRunning ? handlePause : handleRun}
@@ -958,21 +943,5 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#aaa",
     lineHeight: "1.8",
     paddingLeft: "20px",
-  },
-  checkboxGroup: {
-    marginBottom: "15px",
-  },
-  checkboxLabel: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    color: "#ccc",
-    cursor: "pointer",
-    fontSize: "14px",
-  },
-  checkbox: {
-    width: "16px",
-    height: "16px",
-    cursor: "pointer",
   },
 };
