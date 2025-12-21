@@ -568,39 +568,40 @@ const TEST_SCRIPT = `function getRichTarget(state) {
   }
   
   let bestTarget = null;
-  let minTurnsToKill = Infinity;
-  
-  for (const zombie of aliveZombies) {
-    // Find closest human to this zombie
-    let closestHuman = null;
     let minDistanceToHuman = Infinity;
     
     for (const human of aliveHumans) {
-      const distToHuman = distance(zombie.x, zombie.y, human.x, human.y);
-      if (distToHuman < minDistanceToHuman) {
-        minDistanceToHuman = distToHuman;
-        closestHuman = human;
+    const distRichToHuman = distance(state.rich.x, state.rich.y, human.x, human.y);
+    
+    // Find the most threatening zombie for this human
+    let minTurnsToKillHuman = Infinity;
+    let threateningZombie = null;
+    
+    for (const zombie of aliveZombies) {
+      const distZombieToHuman = distance(zombie.x, zombie.y, human.x, human.y);
+      const turnsToKillHuman = Math.floor((distZombieToHuman - 400) / 400);
+      
+      if (turnsToKillHuman < minTurnsToKillHuman) {
+        minTurnsToKillHuman = turnsToKillHuman;
+        threateningZombie = zombie;
       }
     }
     
-    if (closestHuman) {
-      // Calculate turns until zombie kills human
-      const turnsToKillHuman = Math.ceil(minDistanceToHuman / 400);
+    if (threateningZombie) {
+      // Calculate turns for Rich to reach the human (to defend them)
+      const turnsToReachHuman = Math.floor((distRichToHuman - 2000) / 1000);
       
-      // Calculate turns for Rich to reach zombie
-      const distToZombie = distance(state.rich.x, state.rich.y, zombie.x, zombie.y);
-      const turnsToReachZombie = Math.ceil(distToZombie / 1000);
-      
-      // Prioritize zombies that will kill humans soonest, but Rich can still reach
-      if (turnsToKillHuman < minTurnsToKill && turnsToReachZombie <= turnsToKillHuman) {
-        minTurnsToKill = turnsToKillHuman;
-        bestTarget = zombie;
+      // Check if this human is saveable and closer than previous best
+      if (turnsToReachHuman <= minTurnsToKillHuman && distRichToHuman < minDistanceToHuman) {
+        minDistanceToHuman = distRichToHuman;
+        bestTarget = human;
       }
     }
   }
   
-  // If no zombie is immediately threatening, go for closest zombie
+  // If no saveable human found, go for closest zombie
   if (!bestTarget) {
+  throw new Error('no saveable human')
     let minDistance = Infinity;
     for (const zombie of aliveZombies) {
       const dist = distance(state.rich.x, state.rich.y, zombie.x, zombie.y);
