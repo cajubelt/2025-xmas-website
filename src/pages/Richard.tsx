@@ -147,8 +147,8 @@ function findClosestHuman(
   humans: Human[],
   rich: { x: number; y: number }
 ): { x: number; y: number } {
-  let closest: { x: number; y: number } | null = null;
-  let minDist = Infinity;
+  let closest: { x: number; y: number } = { x: rich.x, y: rich.y };
+  let minDist = distance(zombie.x, zombie.y, rich.x, rich.y);
 
   for (const human of humans) {
     if (!human.alive) continue;
@@ -159,8 +159,8 @@ function findClosestHuman(
     }
   }
 
-  // Only target Rich if there are no alive humans left
-  return closest || { x: rich.x, y: rich.y };
+  // Target whichever is closest: Rich or a human
+  return closest;
 }
 
 function fibonacci(n: number): number {
@@ -887,9 +887,9 @@ export default function Richard() {
       {/* Main Content */}
       <div style={styles.mainContent}>
         <div style={styles.container}>
-          <h1 style={styles.title}>🧟 Vibe Code vs Zombies 🎮</h1>
+          <h1 style={styles.title}>🧟 Richard vs Zombies 🎮</h1>
           <p style={styles.subtitle}>
-            Write natural language instructions and let Claude create your zombie-fighting algorithm!
+            Team up with Claude to guide Rich towards victory in a battle against zombies.
           </p>
 
           <div style={styles.gameArea}>
