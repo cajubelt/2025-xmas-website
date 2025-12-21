@@ -50,18 +50,16 @@ const SCALE_Y = CANVAS_HEIGHT / GAME_HEIGHT;
 // ============= HARDCODED TEST CASE =============
 const getRandomHumanEmoji = () => Math.random() < 0.5 ? "🙍‍♂️" : "🙍‍♀️";
 
+// Configuration designed so that default strategy loses, but simple strategies can still win (e.g. move towards closest human)
 const initialTestCase: GameState = {
-  rich: { x: 8000, y: 4500 },
+  rich: { x: 7000, y: 700 },
   humans: [
-    { id: 0, x: 2000, y: 2000, alive: true, emoji: getRandomHumanEmoji(), justDied: false },
-    { id: 1, x: 14000, y: 7000, alive: true, emoji: getRandomHumanEmoji(), justDied: false },
-    { id: 2, x: 5000, y: 6000, alive: true, emoji: getRandomHumanEmoji(), justDied: false },
+    { id: 0, x: 8000, y: 8500, alive: true, emoji: getRandomHumanEmoji(), justDied: false },
   ],
   zombies: [
-    { id: 0, x: 3000, y: 3000, xNext: 0, yNext: 0, alive: true },
-    { id: 1, x: 12000, y: 6000, xNext: 0, yNext: 0, alive: true },
-    { id: 2, x: 6000, y: 1000, xNext: 0, yNext: 0, alive: true },
-    { id: 3, x: 15000, y: 8000, xNext: 0, yNext: 0, alive: true },
+    { id: 0, x: 2000, y: 500, xNext: 0, yNext: 0, alive: true },  // Decoy - closest to Rich (dist 6000)
+    { id: 1, x: 1000, y: 2000, xNext: 0, yNext: 0, alive: true },  // Decoy - closest to Rich (dist 6000)
+    { id: 2, x: 12000, y: 7000, xNext: 0, yNext: 0, alive: true }, // Threat - in path to human (dist 4000 to human)
   ],
   score: 0,
   turn: 0,
