@@ -55,28 +55,6 @@ interface LevelConfig {
   createInitialState: () => GameState;
 }
 
-// Hidden test case for Level 4 test mode (not shown in level list)
-const HIDDEN_TEST_CASE = (): GameState => ({
-  rich: { x: 8000, y: 4500 },
-  humans: [
-    { id: 0, x: 1000, y: 1000, alive: true, emoji: getRandomHumanEmoji() },
-    { id: 1, x: 15000, y: 8000, alive: true, emoji: getRandomHumanEmoji() },
-    { id: 2, x: 8000, y: 8000, alive: true, emoji: getRandomHumanEmoji() },
-  ],
-  zombies: [
-    { id: 0, x: 2000, y: 1500, xNext: 0, yNext: 0, alive: true },
-    { id: 1, x: 14000, y: 7500, xNext: 0, yNext: 0, alive: true },
-    { id: 2, x: 7000, y: 7000, xNext: 0, yNext: 0, alive: true },
-    { id: 3, x: 5000, y: 3000, xNext: 0, yNext: 0, alive: true },
-    { id: 4, x: 12000, y: 2000, xNext: 0, yNext: 0, alive: true },
-  ],
-  score: 0,
-  turn: 0,
-  gameOver: false,
-  won: false,
-  message: "",
-});
-
 const LEVELS: LevelConfig[] = [
   {
     name: "Level 1",
