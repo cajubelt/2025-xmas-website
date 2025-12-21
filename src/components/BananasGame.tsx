@@ -10,6 +10,7 @@ const LETTER_DISTRIBUTION: Record<string, number> = {
 
 const INITIAL_TILES = 21;
 const TILE_SIZE = 44;
+const SNAP_THRESHOLD = 30; // pixels - how close to snap to an adjacent tile
 
 interface Tile {
   id: string;
@@ -63,8 +64,68 @@ export default function BananasGame() {
   const [pendingDumpTile, setPendingDumpTile] = useState<{ tile: Tile, source: 'hand' | 'board' } | null>(null);
   const [hideDumpWarning, setHideDumpWarning] = useState(false);
   const [dontShowAgainChecked, setDontShowAgainChecked] = useState(false);
+  const [snapPreview, setSnapPreview] = useState<{ x: number, y: number } | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const dumpRef = useRef<HTMLDivElement>(null);
+
+  // Helper function to calculate snap position
+  const calculateSnapPosition = useCallback((
+    dropX: number,
+    dropY: number,
+    boardWidth: number,
+    boardHeight: number,
+    currentTileId: string | undefined
+  ): { x: number, y: number } | null => {
+    // Clamp position to board bounds
+    const clampedX = Math.max(0, Math.min(dropX, boardWidth - TILE_SIZE));
+    const clampedY = Math.max(0, Math.min(dropY, boardHeight - TILE_SIZE));
+
+    let finalX = clampedX;
+    let finalY = clampedY;
+    let closestSnapDistance = Infinity;
+    let didSnap = false;
+
+    // Check all existing tiles for potential snap positions
+    for (const existingTile of boardTiles) {
+      if (existingTile.id === currentTileId) continue;
+      
+      // Calculate potential snap positions (adjacent to this tile)
+      const snapPositions = [
+        { x: existingTile.x - TILE_SIZE, y: existingTile.y }, // left
+        { x: existingTile.x + TILE_SIZE, y: existingTile.y }, // right
+        { x: existingTile.x, y: existingTile.y - TILE_SIZE }, // above
+        { x: existingTile.x, y: existingTile.y + TILE_SIZE }, // below
+      ];
+      
+      for (const pos of snapPositions) {
+        const dist = Math.sqrt(Math.pow(clampedX - pos.x, 2) + Math.pow(clampedY - pos.y, 2));
+        if (dist < SNAP_THRESHOLD && dist < closestSnapDistance) {
+          closestSnapDistance = dist;
+          finalX = pos.x;
+          finalY = pos.y;
+          didSnap = true;
+        }
+      }
+    }
+
+    if (!didSnap) return null;
+
+    // Ensure snapped position is within bounds
+    finalX = Math.max(0, Math.min(finalX, boardWidth - TILE_SIZE));
+    finalY = Math.max(0, Math.min(finalY, boardHeight - TILE_SIZE));
+
+    // Check for overlaps with existing tiles
+    const wouldOverlap = boardTiles.some(t => {
+      if (t.id === currentTileId) return false;
+      const dx = Math.abs(t.x - finalX);
+      const dy = Math.abs(t.y - finalY);
+      return dx < TILE_SIZE && dy < TILE_SIZE;
+    });
+
+    if (wouldOverlap) return null;
+
+    return { x: finalX, y: finalY };
+  }, [boardTiles]);
 
   const startGame = useCallback(() => {
     const newPool = createTilePool();
@@ -177,7 +238,28 @@ export default function BananasGame() {
                    e.clientY <= dumpRect.bottom;
       setIsOverDump(over);
     }
-  }, [draggedTile, isPanning, panStart]);
+
+    // Calculate snap preview position
+    if (boardRef.current) {
+      const boardRect = boardRef.current.getBoundingClientRect();
+      const dropX = e.clientX - dragOffset.x - boardRect.left;
+      const dropY = e.clientY - dragOffset.y - boardRect.top;
+
+      // Check if over board
+      const isOnBoard = 
+        e.clientX >= boardRect.left && 
+        e.clientX <= boardRect.right && 
+        e.clientY >= boardRect.top && 
+        e.clientY <= boardRect.bottom;
+
+      if (isOnBoard) {
+        const snap = calculateSnapPosition(dropX, dropY, boardRect.width, boardRect.height, draggedTile.id);
+        setSnapPreview(snap);
+      } else {
+        setSnapPreview(null);
+      }
+    }
+  }, [draggedTile, isPanning, panStart, dragOffset, calculateSnapPosition]);
 
   const handleMouseUp = useCallback((e: MouseEvent) => {
     if (isPanning) {
@@ -189,6 +271,7 @@ export default function BananasGame() {
       setDraggedTile(null);
       setDragSource(null);
       setIsOverDump(false);
+      setSnapPreview(null);
       return;
     }
 
@@ -212,6 +295,7 @@ export default function BananasGame() {
         setDraggedTile(null);
         setDragSource(null);
         setIsOverDump(false);
+        setSnapPreview(null);
         return;
       }
     }
@@ -232,11 +316,16 @@ export default function BananasGame() {
       const clampedX = Math.max(0, Math.min(dropX, boardRect.width - TILE_SIZE));
       const clampedY = Math.max(0, Math.min(dropY, boardRect.height - TILE_SIZE));
 
-      // Check for overlaps with existing tiles
-      const wouldOverlap = boardTiles.some(t => {
+      // Use snap position if available, otherwise use clamped position
+      const snap = calculateSnapPosition(dropX, dropY, boardRect.width, boardRect.height, draggedTile.id);
+      const finalX = snap ? snap.x : clampedX;
+      const finalY = snap ? snap.y : clampedY;
+
+      // Check for overlaps with existing tiles (only if not snapping, snap already checks)
+      const wouldOverlap = !snap && boardTiles.some(t => {
         if (t.id === draggedTile.id) return false;
-        const dx = Math.abs(t.x - clampedX);
-        const dy = Math.abs(t.y - clampedY);
+        const dx = Math.abs(t.x - finalX);
+        const dy = Math.abs(t.y - finalY);
         return dx < TILE_SIZE && dy < TILE_SIZE;
       });
 
@@ -247,7 +336,7 @@ export default function BananasGame() {
         } else {
           setBoardTiles(prev => prev.filter(t => t.id !== draggedTile.id));
         }
-        setBoardTiles(prev => [...prev, { ...draggedTile, x: clampedX, y: clampedY }]);
+        setBoardTiles(prev => [...prev, { ...draggedTile, x: finalX, y: finalY }]);
       }
     } else if (dragSource === 'board') {
       // Dragged from board to outside - return to hand
@@ -258,7 +347,8 @@ export default function BananasGame() {
     setDraggedTile(null);
     setDragSource(null);
     setIsOverDump(false);
-  }, [isPanning, draggedTile, dragOffset, dragSource, boardTiles, hideDumpWarning, executeDump]);
+    setSnapPreview(null);
+  }, [isPanning, draggedTile, dragOffset, dragSource, boardTiles, hideDumpWarning, executeDump, calculateSnapPosition]);
 
   useEffect(() => {
     if (draggedTile || isPanning) {
@@ -337,7 +427,16 @@ export default function BananasGame() {
             {tile.letter}
           </div>
         ))}
-        {boardTiles.length === 0 && (
+        {/* Snap preview ghost */}
+        {draggedTile && snapPreview && (
+          <div
+            className="bananas-tile on-board snap-preview"
+            style={{ left: snapPreview.x, top: snapPreview.y }}
+          >
+            {draggedTile.letter}
+          </div>
+        )}
+        {boardTiles.length === 0 && !draggedTile && (
           <div className="board-placeholder">
             Drag tiles here to build your words
           </div>
