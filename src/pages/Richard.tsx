@@ -11,7 +11,6 @@ interface Human {
   y: number;
   alive: boolean;
   emoji: string;
-  justDied: boolean;
 }
 
 interface Zombie {
@@ -60,9 +59,9 @@ const LEVELS: LevelConfig[] = [
   {
     name: "Level 1",
     createInitialState: () => ({
-      rich: { x: 7000, y: 700 },
+      rich: { x: 7000, y: 1500 },
       humans: [
-        { id: 0, x: 8000, y: 8500, alive: true, emoji: getRandomHumanEmoji(), justDied: false },
+        { id: 0, x: 8000, y: 8500, alive: true, emoji: getRandomHumanEmoji() },
       ],
       zombies: [
         { id: 0, x: 2000, y: 500, xNext: 0, yNext: 0, alive: true },
@@ -79,12 +78,13 @@ const LEVELS: LevelConfig[] = [
   {
     name: "Level 2",
     createInitialState: () => ({
-      rich: { x: 7000, y: 700 },
+      rich: { x: 8000, y: 4500 },
       humans: [
-        { id: 0, x: 8000, y: 8500, alive: true, emoji: getRandomHumanEmoji(), justDied: false },
+        { id: 0, x: 4000, y: 4500, alive: true, emoji: getRandomHumanEmoji() },
+        { id: 1, x: 13000, y: 4500, alive: true, emoji: getRandomHumanEmoji() },
       ],
       zombies: [
-        { id: 0, x: 2000, y: 500, xNext: 0, yNext: 0, alive: true },
+        { id: 0, x: 3000, y: 4000, xNext: 0, yNext: 0, alive: true },
         { id: 1, x: 1000, y: 2000, xNext: 0, yNext: 0, alive: true },
         { id: 2, x: 12000, y: 7000, xNext: 0, yNext: 0, alive: true },
       ],
@@ -100,7 +100,7 @@ const LEVELS: LevelConfig[] = [
     createInitialState: () => ({
       rich: { x: 7000, y: 700 },
       humans: [
-        { id: 0, x: 8000, y: 8500, alive: true, emoji: getRandomHumanEmoji(), justDied: false },
+        { id: 0, x: 20000, y: 8500, alive: true, emoji: getRandomHumanEmoji() },
       ],
       zombies: [
         { id: 0, x: 2000, y: 500, xNext: 0, yNext: 0, alive: true },
@@ -176,11 +176,6 @@ function simulateTurn(
   const newState: GameState = JSON.parse(JSON.stringify(state));
   newState.turn++;
 
-  // Reset justDied flags from previous turn
-  for (const human of newState.humans) {
-    human.justDied = false;
-  }
-
   // 1. Zombies move towards their targets
   for (const zombie of newState.zombies) {
     if (!zombie.alive) continue;
@@ -232,7 +227,6 @@ function simulateTurn(
       const dist = distance(zombie.x, zombie.y, human.x, human.y);
       if (dist < ZOMBIE_SPEED) {
         human.alive = false;
-        human.justDied = true;
       }
     }
   }
