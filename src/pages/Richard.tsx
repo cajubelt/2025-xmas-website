@@ -210,6 +210,41 @@ function simulateTurn(
 }
 
 // ============= CANVAS RENDERING =============
+// Preload Rich's image
+const richImage = new Image();
+richImage.src = "/rich calm face.png";
+
+// Process image to remove white background
+let processedRichImage: HTMLCanvasElement | null = null;
+
+richImage.onload = () => {
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = richImage.width;
+  tempCanvas.height = richImage.height;
+  const tempCtx = tempCanvas.getContext('2d');
+  
+  if (tempCtx) {
+    tempCtx.drawImage(richImage, 0, 0);
+    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+    const data = imageData.data;
+    
+    // Make white pixels transparent
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      
+      // If pixel is white (or very close to white), make it transparent
+      if (r > 240 && g > 240 && b > 240) {
+        data[i + 3] = 0; // Set alpha to 0
+      }
+    }
+    
+    tempCtx.putImageData(imageData, 0, 0);
+    processedRichImage = tempCanvas;
+  }
+};
+
 function renderGame(
   ctx: CanvasRenderingContext2D,
   state: GameState,
@@ -282,13 +317,36 @@ function renderGame(
   }
 
   // Draw Rich
-  ctx.fillStyle = "#00ffff";
-  ctx.beginPath();
-  ctx.arc(state.rich.x * SCALE_X, state.rich.y * SCALE_Y, 12, 0, Math.PI * 2);
-  ctx.fill();
+  const richX = state.rich.x * SCALE_X;
+  const richY = state.rich.y * SCALE_Y;
+  
+  if (processedRichImage) {
+    // Calculate dimensions preserving aspect ratio
+    const targetHeight = 40; // Base height
+    const aspectRatio = processedRichImage.width / processedRichImage.height;
+    const richWidth = targetHeight * aspectRatio;
+    const richHeight = targetHeight;
+    
+    // Draw the processed image (with transparent background) centered on Rich's position
+    ctx.drawImage(
+      processedRichImage, 
+      richX - richWidth / 2, 
+      richY - richHeight / 2, 
+      richWidth, 
+      richHeight
+    );
+  } else {
+    // Fallback to cyan dot while image is loading
+    ctx.fillStyle = "#00ffff";
+    ctx.beginPath();
+    ctx.arc(richX, richY, 12, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  // Label
   ctx.fillStyle = "#ffffff";
   ctx.font = "bold 12px Arial";
-  ctx.fillText("RICH", state.rich.x * SCALE_X - 14, state.rich.y * SCALE_Y - 16);
+  ctx.fillText("RICH", richX - 14, richY - 26);
 
   // Draw HUD
   ctx.fillStyle = "#ffffff";
