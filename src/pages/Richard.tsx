@@ -10,6 +10,8 @@ interface Human {
   x: number;
   y: number;
   alive: boolean;
+  emoji: string;
+  justDied: boolean;
 }
 
 interface Zombie {
@@ -46,12 +48,14 @@ const SCALE_X = CANVAS_WIDTH / GAME_WIDTH;
 const SCALE_Y = CANVAS_HEIGHT / GAME_HEIGHT;
 
 // ============= HARDCODED TEST CASE =============
+const getRandomHumanEmoji = () => Math.random() < 0.5 ? "🙍‍♂️" : "🙍‍♀️";
+
 const initialTestCase: GameState = {
   rich: { x: 8000, y: 4500 },
   humans: [
-    { id: 0, x: 2000, y: 2000, alive: true },
-    { id: 1, x: 14000, y: 7000, alive: true },
-    { id: 2, x: 5000, y: 6000, alive: true },
+    { id: 0, x: 2000, y: 2000, alive: true, emoji: getRandomHumanEmoji(), justDied: false },
+    { id: 1, x: 14000, y: 7000, alive: true, emoji: getRandomHumanEmoji(), justDied: false },
+    { id: 2, x: 5000, y: 6000, alive: true, emoji: getRandomHumanEmoji(), justDied: false },
   ],
   zombies: [
     { id: 0, x: 3000, y: 3000, xNext: 0, yNext: 0, alive: true },
@@ -122,6 +126,11 @@ function simulateTurn(
   const newState: GameState = JSON.parse(JSON.stringify(state));
   newState.turn++;
 
+  // Reset justDied flags from previous turn
+  for (const human of newState.humans) {
+    human.justDied = false;
+  }
+
   // 1. Zombies move towards their targets
   for (const zombie of newState.zombies) {
     if (!zombie.alive) continue;
@@ -173,6 +182,7 @@ function simulateTurn(
       const dist = distance(zombie.x, zombie.y, human.x, human.y);
       if (dist < ZOMBIE_SPEED) {
         human.alive = false;
+        human.justDied = true;
       }
     }
   }
@@ -286,34 +296,28 @@ function renderGame(
 
   // Draw humans
   for (const human of state.humans) {
-    if (!human.alive) continue;
-    ctx.fillStyle = "#00ff00";
-    ctx.beginPath();
-    ctx.arc(human.x * SCALE_X, human.y * SCALE_Y, 8, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Human label
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "10px Arial";
-    ctx.fillText(`H${human.id}`, human.x * SCALE_X - 8, human.y * SCALE_Y - 12);
+    const emoji = human.alive ? human.emoji : "🪦";
+    
+    // Draw human emoji (or tombstone if dead)
+    ctx.font = "24px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(emoji, human.x * SCALE_X, human.y * SCALE_Y);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
   }
 
   // Draw zombies
   for (const zombie of state.zombies) {
-    if (!zombie.alive) continue;
-    ctx.fillStyle = "#ff4444";
-    ctx.beginPath();
-    ctx.arc(zombie.x * SCALE_X, zombie.y * SCALE_Y, 10, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Zombie label
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "10px Arial";
-    ctx.fillText(
-      `Z${zombie.id}`,
-      zombie.x * SCALE_X - 8,
-      zombie.y * SCALE_Y - 14
-    );
+    const emoji = zombie.alive ? "🧟" : "❌";
+    
+    // Draw zombie emoji (or red X if dead)
+    ctx.font = "24px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(emoji, zombie.x * SCALE_X, zombie.y * SCALE_Y);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
   }
 
   // Draw Rich
@@ -760,13 +764,10 @@ export default function Richard() {
 
         <div style={styles.legend}>
           <span style={styles.legendItem}>
-            <span style={{ ...styles.dot, backgroundColor: "#00ffff" }} /> Rich
+            <span style={styles.emojiLegend}>🙍 / 🪦</span> Humans
           </span>
           <span style={styles.legendItem}>
-            <span style={{ ...styles.dot, backgroundColor: "#00ff00" }} /> Humans
-          </span>
-          <span style={styles.legendItem}>
-            <span style={{ ...styles.dot, backgroundColor: "#ff4444" }} /> Zombies
+            <span style={styles.emojiLegend}>🧟 / ❌</span> Zombies
           </span>
         </div>
       </div>
@@ -905,6 +906,10 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     gap: "5px",
     fontSize: "14px",
+  },
+  emojiLegend: {
+    fontSize: "18px",
+    display: "inline-block",
   },
   dot: {
     width: "12px",
