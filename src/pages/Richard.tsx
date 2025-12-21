@@ -98,8 +98,8 @@ function findClosestHuman(
   humans: Human[],
   rich: { x: number; y: number }
 ): { x: number; y: number } {
-  let closest = { x: rich.x, y: rich.y };
-  let minDist = distance(zombie.x, zombie.y, rich.x, rich.y);
+  let closest: { x: number; y: number } | null = null;
+  let minDist = Infinity;
 
   for (const human of humans) {
     if (!human.alive) continue;
@@ -110,7 +110,8 @@ function findClosestHuman(
     }
   }
 
-  return closest;
+  // Only target Rich if there are no alive humans left
+  return closest || { x: rich.x, y: rich.y };
 }
 
 function fibonacci(n: number): number {
@@ -257,9 +258,7 @@ richImage.onload = () => {
 
 function renderGame(
   ctx: CanvasRenderingContext2D,
-  state: GameState,
-  targetX?: number,
-  targetY?: number
+  state: GameState
 ) {
   // Clear canvas
   ctx.fillStyle = "#1a1a2e";
@@ -579,10 +578,6 @@ export default function Richard() {
   const [algorithm, setAlgorithm] = useState<
     ((state: GameState) => { x: number; y: number }) | null
   >(null);
-  const [currentTarget, setCurrentTarget] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
   const [status, setStatus] = useState("");
   const [generatedCode, setGeneratedCode] = useState("");
   const [lastGeneratedInstructions, setLastGeneratedInstructions] = useState("");
@@ -611,8 +606,8 @@ export default function Richard() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    renderGame(ctx, gameState, currentTarget?.x, currentTarget?.y);
-  }, [gameState, currentTarget]);
+    renderGame(ctx, gameState);
+  }, [gameState]);
 
   // Game loop
   const gameLoop = useCallback(
@@ -631,7 +626,6 @@ export default function Richard() {
 
       try {
         const target = algorithm(gameState);
-        setCurrentTarget(target);
         const newState = simulateTurn(gameState, target.x, target.y);
         setGameState(newState);
 
@@ -702,7 +696,6 @@ export default function Richard() {
   const handleReset = () => {
     setIsRunning(false);
     setGameState(JSON.parse(JSON.stringify(initialTestCase)));
-    setCurrentTarget(null);
     setStatus("Reset to initial state");
   };
 
@@ -718,7 +711,6 @@ export default function Richard() {
 
     try {
       const target = algorithm(gameState);
-      setCurrentTarget(target);
       const newState = simulateTurn(gameState, target.x, target.y);
       setGameState(newState);
       if (newState.gameOver) {
@@ -748,117 +740,109 @@ export default function Richard() {
   };
 
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>🧟 Vibe Code vs Zombies 🎮</h1>
-      <p style={styles.subtitle}>
-        Write natural language instructions and let Claude create your zombie-fighting algorithm!
-      </p>
+    <div style={styles.page}>
+      <div style={styles.container}>
+        <h1 style={styles.title}>🧟 Vibe Code vs Zombies 🎮</h1>
+        <p style={styles.subtitle}>
+          Write natural language instructions and let Claude create your zombie-fighting algorithm!
+        </p>
 
-      <div style={styles.gameArea}>
-        <canvas
-          ref={canvasRef}
-          width={CANVAS_WIDTH}
-          height={CANVAS_HEIGHT}
-          style={styles.canvas}
-        />
-
-        <div style={styles.legend}>
-          <span style={styles.legendItem}>
-            <span style={styles.emojiLegend}>🙍 / 🪦</span> Humans
-          </span>
-          <span style={styles.legendItem}>
-            <span style={styles.emojiLegend}>🧟 / ❌</span> Zombies
-          </span>
-        </div>
-      </div>
-
-      <div style={styles.controls}>
-        <div style={styles.inputGroup}>
-          <label style={styles.label}>Claude API Key:</label>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="sk-ant-..."
-            style={styles.input}
+        <div style={styles.gameArea}>
+          <canvas
+            ref={canvasRef}
+            width={CANVAS_WIDTH}
+            height={CANVAS_HEIGHT}
+            style={styles.canvas}
           />
-        </div>
 
-        <div style={styles.inputGroup}>
-          <label style={styles.label}>Your Instructions (natural language):</label>
-          <textarea
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
-            placeholder="Describe how Rich should move to defeat zombies and save humans..."
-            style={styles.textarea}
-            rows={4}
-          />
-        </div>
-
-        <div style={styles.buttonGroup}>
-          <button 
-            onClick={handleGenerateAlgorithm} 
-            style={{
-              ...styles.button,
-              ...(instructions === lastGeneratedInstructions ? styles.buttonDisabled : {})
-            }}
-            disabled={instructions === lastGeneratedInstructions}
-          >
-            {generatedCode ? "🤖 Update Algorithm" : "🤖 Generate Algorithm"}
-          </button>
-          <button
-            onClick={isRunning ? handlePause : handleRun}
-            style={{
-              ...styles.button,
-              ...(gameState.gameOver ? styles.buttonDisabled : {})
-            }}
-            disabled={gameState.gameOver}
-          >
-            {isRunning ? "⏸️ Pause" : "▶️ Run"}
-          </button>
-          <button onClick={handleStep} style={styles.button}>
-            ⏭️ Step
-          </button>
-          <button 
-            onClick={handleReset} 
-            style={{
-              ...styles.button,
-              ...(isInitialState() ? styles.buttonDisabled : {})
-            }}
-            disabled={isInitialState()}
-          >
-            🔄 Reset
-          </button>
-        </div>
-
-        {status && <div style={styles.status}>{status}</div>}
-
-        {generatedCode && (
-          <div style={styles.codeSection}>
-            <label style={styles.label}>Generated Algorithm (editable):</label>
-            <div style={styles.editorWrapper}>
-              <Editor
-                value={generatedCode}
-                onValueChange={handleCodeChange}
-                highlight={(code) =>
-                  Prism.highlight(code, Prism.languages.javascript, "javascript")
-                }
-                padding={15}
-                style={styles.editor}
-              />
-            </div>
+          <div style={styles.legend}>
+            <span style={styles.legendItem}>
+              <span style={styles.emojiLegend}>🙍 / 🪦</span> Humans
+            </span>
+            <span style={styles.legendItem}>
+              <span style={styles.emojiLegend}>🧟 / ❌</span> Zombies
+            </span>
           </div>
-        )}
-      </div>
+        </div>
 
-      <div style={styles.rules}>
-        <h3>📜 Game Rules</h3>
-        <ul style={styles.rulesList}>
-          <li>Rich moves 1000 units/turn, kills zombies within 2000 units</li>
-          <li>Zombies move 400 units/turn towards nearest human</li>
-          <li>Win: Kill all zombies with at least 1 human alive</li>
-          <li>Score: (humans alive)² × 10 per zombie (Fibonacci bonus for combos!)</li>
-        </ul>
+        <div style={styles.controls}>
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Claude API Key:</label>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="sk-ant-..."
+              style={styles.input}
+            />
+          </div>
+
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Your Instructions (natural language):</label>
+            <textarea
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              placeholder="Describe how Rich should move to defeat zombies and save humans..."
+              style={styles.textarea}
+              rows={4}
+            />
+          </div>
+
+          <div style={styles.buttonGroup}>
+            <button 
+              onClick={handleGenerateAlgorithm} 
+              style={{
+                ...styles.button,
+                ...(instructions === lastGeneratedInstructions ? styles.buttonDisabled : {})
+              }}
+              disabled={instructions === lastGeneratedInstructions}
+            >
+              {generatedCode ? "🤖 Update Algorithm" : "🤖 Generate Algorithm"}
+            </button>
+            <button
+              onClick={isRunning ? handlePause : handleRun}
+              style={{
+                ...styles.button,
+                ...(gameState.gameOver ? styles.buttonDisabled : {})
+              }}
+              disabled={gameState.gameOver}
+            >
+              {isRunning ? "⏸️ Pause" : "▶️ Run"}
+            </button>
+            <button onClick={handleStep} style={styles.button}>
+              ⏭️ Step
+            </button>
+            <button 
+              onClick={handleReset} 
+              style={{
+                ...styles.button,
+                ...(isInitialState() ? styles.buttonDisabled : {})
+              }}
+              disabled={isInitialState()}
+            >
+              🔄 Reset
+            </button>
+          </div>
+
+          {status && <div style={styles.status}>{status}</div>}
+
+          {generatedCode && (
+            <div style={styles.codeSection}>
+              <label style={styles.label}>Generated Algorithm (editable):</label>
+              <div style={styles.editorWrapper}>
+                <Editor
+                  value={generatedCode}
+                  onValueChange={handleCodeChange}
+                  highlight={(code) =>
+                    Prism.highlight(code, Prism.languages.javascript, "javascript")
+                  }
+                  padding={15}
+                  style={styles.editor}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -866,11 +850,37 @@ export default function Richard() {
 
 // ============= STYLES =============
 const styles: Record<string, React.CSSProperties> = {
+  page: {
+    minHeight: "100vh",
+    width: "100%",
+    padding: "32px 16px",
+    boxSizing: "border-box",
+    // Subtle “neon night” background: soft cyan/red glow + barely-there grid.
+    // Keeps focus on the canvas/emoji characters (all high-contrast gameplay is inside the board).
+    backgroundColor: "#070812",
+    backgroundImage: [
+      "radial-gradient(700px 420px at 15% 10%, rgba(0, 255, 255, 0.10), rgba(0, 255, 255, 0) 60%)",
+      "radial-gradient(700px 420px at 85% 90%, rgba(255, 68, 68, 0.08), rgba(255, 68, 68, 0) 60%)",
+      "radial-gradient(900px 600px at 50% 40%, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0) 55%)",
+      "repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.022) 0px, rgba(255, 255, 255, 0.022) 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 72px)",
+      "repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.018) 0px, rgba(255, 255, 255, 0.018) 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 72px)",
+    ].join(", "),
+    backgroundAttachment: "fixed",
+    display: "flex",
+    justifyContent: "center",
+  },
   container: {
     maxWidth: "900px",
     margin: "0 auto",
     padding: "20px",
     fontFamily: "system-ui, -apple-system, sans-serif",
+    borderRadius: "14px",
+    border: "1px solid rgba(255, 255, 255, 0.07)",
+    background: "rgba(10, 10, 20, 0.35)",
+    backdropFilter: "blur(10px)",
+    WebkitBackdropFilter: "blur(10px)",
+    boxShadow:
+      "0 18px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 255, 255, 0.03) inset",
   },
   title: {
     textAlign: "center",
@@ -996,15 +1006,5 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "13px",
     lineHeight: "1.5",
     minHeight: "100px",
-  },
-  rules: {
-    backgroundColor: "#1a1a2e",
-    padding: "20px",
-    borderRadius: "8px",
-  },
-  rulesList: {
-    color: "#aaa",
-    lineHeight: "1.8",
-    paddingLeft: "20px",
   },
 };
