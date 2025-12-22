@@ -1,14 +1,18 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import './BananasGame.css';
 
-// Standard Bananagrams letter distribution (144 tiles total)
+// Standard Bananagrams letter distribution (144 tiles total in original)
 const LETTER_DISTRIBUTION: Record<string, number> = {
   A: 13, B: 3, C: 3, D: 6, E: 18, F: 3, G: 4, H: 3, I: 12, J: 2,
   K: 2, L: 5, M: 3, N: 8, O: 11, P: 3, Q: 2, R: 9, S: 6, T: 9,
   U: 6, V: 3, W: 3, X: 2, Y: 3, Z: 2
 };
+const ORIGINAL_TOTAL = Object.values(LETTER_DISTRIBUTION).reduce((a, b) => a + b, 0); // 144
 
-const INITIAL_TILES = 21;
+// Adjustable total supply - change this to scale the game size
+const TOTAL_TILES = 72; // Half the original
+
+const INITIAL_TILES = 10
 const TILE_SIZE = 44;
 const SNAP_THRESHOLD = 30; // pixels - how close to snap to an adjacent tile
 
@@ -24,11 +28,16 @@ interface PlacedTile extends Tile {
 
 function createTilePool(): string[] {
   const pool: string[] = [];
+  const scale = TOTAL_TILES / ORIGINAL_TOTAL;
+  
+  // Scale each letter's count proportionally, ensuring at least 1 of each
   for (const [letter, count] of Object.entries(LETTER_DISTRIBUTION)) {
-    for (let i = 0; i < count; i++) {
+    const scaledCount = Math.max(1, Math.round(count * scale));
+    for (let i = 0; i < scaledCount; i++) {
       pool.push(letter);
     }
   }
+  
   // Shuffle the pool
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -46,6 +55,19 @@ function drawTiles(pool: string[], count: number): { drawn: Tile[], remaining: s
   }
   return { drawn, remaining };
 }
+
+const OPPONENT_NAMES = ['Millie', 'Chipaul', 'Charlie', 'Tammy', 'Emily', 'Richard'];
+const PEEL_MESSAGES = [
+  'PEEL! 🍌',
+  'Peel! Hehe!',
+  'PEEL!! 🎉',
+  'Another peel!',
+  'Peeling again!',
+  'PEEL! 😄',
+  'Does "peel" have two e\'s? 🤔',
+  "What do I say when I'm done again?",
+  "Dump! Wait I mean peel! 🤦‍♂️",
+];
 
 export default function BananasGame() {
   const [pool, setPool] = useState<string[]>([]);
@@ -65,8 +87,20 @@ export default function BananasGame() {
   const [hideDumpWarning, setHideDumpWarning] = useState(false);
   const [dontShowAgainChecked, setDontShowAgainChecked] = useState(false);
   const [snapPreview, setSnapPreview] = useState<{ x: number, y: number } | null>(null);
+  const [hasPlayerPeeled, setHasPlayerPeeled] = useState(false);
+  const [opponentName] = useState(() => OPPONENT_NAMES[Math.floor(Math.random() * OPPONENT_NAMES.length)]);
+  const [opponentSpeechBubble, setOpponentSpeechBubble] = useState<string | null>(null);
+  const [defeat, setDefeat] = useState(false);
+  const [showVictoryOverlay, setShowVictoryOverlay] = useState(true);
   const boardRef = useRef<HTMLDivElement>(null);
   const dumpRef = useRef<HTMLDivElement>(null);
+  const opponentTimerRef = useRef<number | null>(null);
+  const poolRef = useRef<string[]>([]);
+
+  // Keep poolRef in sync with pool state for synchronous access in timers
+  useEffect(() => {
+    poolRef.current = pool;
+  }, [pool]);
 
   // Helper function to calculate snap position
   const calculateSnapPosition = useCallback((
@@ -128,6 +162,11 @@ export default function BananasGame() {
   }, [boardTiles]);
 
   const startGame = useCallback(() => {
+    // Clear any existing opponent timer
+    if (opponentTimerRef.current) {
+      clearTimeout(opponentTimerRef.current);
+      opponentTimerRef.current = null;
+    }
     const newPool = createTilePool();
     const { drawn, remaining } = drawTiles(newPool, INITIAL_TILES);
     setPool(remaining);
@@ -135,16 +174,71 @@ export default function BananasGame() {
     setBoardTiles([]);
     setGameStarted(true);
     setVictory(false);
+    setDefeat(false);
+    setShowVictoryOverlay(true);
     setShowDumpWarning(false);
     setPendingDumpTile(null);
+    setHasPlayerPeeled(false);
+    setOpponentSpeechBubble(null);
+  }, []);
+
+  const scheduleOpponentPeel = useCallback(() => {
+    // Clear any existing timer
+    if (opponentTimerRef.current) {
+      clearTimeout(opponentTimerRef.current);
+    }
+    // Schedule next peel between 15-30 seconds
+    const delay = 15000 + Math.random() * 15000;
+    opponentTimerRef.current = window.setTimeout(() => {
+      // Read pool synchronously from ref
+      const currentPool = poolRef.current;
+      
+      // If not enough tiles for both players, opponent wins (player loses)
+      if (currentPool.length < 2) {
+        setOpponentSpeechBubble('BANANAS! I win! 🎉');
+        setDefeat(true);
+        return;
+      }
+      
+      // Draw one tile for the player
+      const playerTile = currentPool[currentPool.length - 1];
+      const newTile: Tile = { id: `tile-${Date.now()}-opp-${Math.random()}`, letter: playerTile };
+      
+      // Remove 2 tiles from pool (1 for player, 1 burned for opponent)
+      const remaining = currentPool.slice(0, -2);
+      setPool(remaining);
+      
+      // Add tile to player's hand
+      setHandTiles(h => [...h, newTile]);
+      
+      // Show speech bubble
+      const message = PEEL_MESSAGES[Math.floor(Math.random() * PEEL_MESSAGES.length)];
+      setOpponentSpeechBubble(message);
+      setTimeout(() => setOpponentSpeechBubble(null), 2500);
+      
+      // Schedule next peel if there are still tiles
+      if (remaining.length >= 2) {
+        scheduleOpponentPeel();
+      }
+    }, delay);
   }, []);
 
   const drawOneTile = useCallback(() => {
     if (pool.length === 0) return;
-    const { drawn, remaining } = drawTiles(pool, 1);
+    // Draw 1 tile for player, burn 1 for opponent (2 total from pool)
+    const { drawn, remaining: afterPlayer } = drawTiles(pool, 1);
+    // Burn one more tile for the opponent's peel
+    const remaining = afterPlayer.length > 0 ? afterPlayer.slice(0, -1) : afterPlayer;
     setPool(remaining);
     setHandTiles(prev => [...prev, ...drawn]);
-  }, [pool]);
+    
+    // Start/reset opponent timer on peel
+    if (!hasPlayerPeeled) {
+      setHasPlayerPeeled(true);
+    }
+    // Always reset the opponent timer when player peels
+    scheduleOpponentPeel();
+  }, [pool, hasPlayerPeeled, scheduleOpponentPeel]);
 
   const executeDump = useCallback((tile: Tile, source: 'hand' | 'board') => {
     // Remove the tile from hand or board
@@ -154,24 +248,21 @@ export default function BananasGame() {
       setBoardTiles(prev => prev.filter(t => t.id !== tile.id));
     }
     // Return tile to pool and draw 3 new tiles
-    setPool(prev => {
-      const newPool = [...prev, tile.letter];
-      // Shuffle the returned tile in
-      for (let i = newPool.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [newPool[i], newPool[j]] = [newPool[j], newPool[i]];
-      }
-      return newPool;
-    });
-    // Draw 3 tiles after a brief delay to let pool update
-    setTimeout(() => {
-      setPool(prev => {
-        const tilesToDraw = Math.min(3, prev.length);
-        const { drawn, remaining } = drawTiles(prev, tilesToDraw);
-        setHandTiles(h => [...h, ...drawn]);
-        return remaining;
-      });
-    }, 0);
+    // First, add the tile back to pool
+    const currentPool = [...poolRef.current, tile.letter];
+    // Shuffle the returned tile in
+    for (let i = currentPool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [currentPool[i], currentPool[j]] = [currentPool[j], currentPool[i]];
+    }
+    
+    // Draw 3 tiles from the updated pool
+    const tilesToDraw = Math.min(3, currentPool.length);
+    const { drawn, remaining } = drawTiles(currentPool, tilesToDraw);
+    
+    // Update state
+    setPool(remaining);
+    setHandTiles(h => [...h, ...drawn]);
   }, []);
 
   const handleDumpConfirm = useCallback(() => {
@@ -361,6 +452,22 @@ export default function BananasGame() {
     }
   }, [draggedTile, isPanning, handleMouseMove, handleMouseUp]);
 
+  // Clean up opponent timer on victory, defeat, or unmount
+  useEffect(() => {
+    if ((victory || defeat) && opponentTimerRef.current) {
+      clearTimeout(opponentTimerRef.current);
+      opponentTimerRef.current = null;
+    }
+  }, [victory, defeat]);
+
+  useEffect(() => {
+    return () => {
+      if (opponentTimerRef.current) {
+        clearTimeout(opponentTimerRef.current);
+      }
+    };
+  }, []);
+
   const allTilesUsed = pool.length === 0 && handTiles.length === 0;
 
   const claimVictory = () => {
@@ -381,25 +488,49 @@ export default function BananasGame() {
     );
   }
 
-  if (victory) {
+  // Victory overlay is shown on top of the board so player can review their words
+  const victoryOverlay = victory && showVictoryOverlay && (
+    <div className="victory-overlay">
+      <div className="victory-content">
+        <button className="victory-close-btn" onClick={() => setShowVictoryOverlay(false)}>✕</button>
+        <h1>🎉 BANANAS! 🎉</h1>
+        <h2>You Win!</h2>
+        <div className="victory-bananas">🍌🍌🍌🍌🍌</div>
+        <p>Congratulations, Michie!</p>
+        <div className="confetti">
+          {Array.from({ length: 50 }).map((_, i) => (
+            <div key={i} className="confetti-piece" style={{
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 2}s`,
+              backgroundColor: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'][Math.floor(Math.random() * 6)]
+            }} />
+          ))}
+        </div>
+        <button className="bananas-start-btn" onClick={startGame}>
+          Play Again
+        </button>
+      </div>
+    </div>
+  );
+
+  // Floating play again button when victory overlay is closed
+  const playAgainButton = victory && !showVictoryOverlay && (
+    <button className="floating-play-again" onClick={startGame}>
+      🍌 Play Again
+    </button>
+  );
+
+  if (defeat) {
     return (
       <div className="bananas-game">
-        <div className="bananas-victory">
-          <h1>🎉 BANANAS! 🎉</h1>
-          <h2>You Win!</h2>
-          <div className="victory-bananas">🍌🍌🍌🍌🍌</div>
-          <p>Congratulations, Michie! You used all your tiles!</p>
-          <div className="confetti">
-            {Array.from({ length: 50 }).map((_, i) => (
-              <div key={i} className="confetti-piece" style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 2}s`,
-                backgroundColor: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'][Math.floor(Math.random() * 6)]
-              }} />
-            ))}
-          </div>
+        <div className="bananas-defeat">
+          <h1>😢 Oh no! 😢</h1>
+          <h2>{opponentName} Won!</h2>
+          <div className="defeat-bananas">🍌💔🍌</div>
+          <p>The bunch ran out before you could finish!</p>
+          <p className="defeat-encouragement">Better luck next time, Michie!</p>
           <button className="bananas-start-btn" onClick={startGame}>
-            Play Again
+            Try Again
           </button>
         </div>
       </div>
@@ -414,6 +545,14 @@ export default function BananasGame() {
           <span>Tiles in bunch: {pool.length}</span>
           <span>Your tiles: {handTiles.length + boardTiles.length}</span>
         </div>
+        {opponentSpeechBubble && (
+          <div className="opponent-speech">
+            <span className="opponent-avatar">👤</span>
+            <div className="speech-bubble">
+              <span className="opponent-name">{opponentName}:</span> {opponentSpeechBubble}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="bananas-board" ref={boardRef} onMouseDown={handleBoardMouseDown}>
@@ -528,6 +667,12 @@ export default function BananasGame() {
           </div>
         </div>
       )}
+
+      {/* Victory overlay - shown on top of board so player can review */}
+      {victoryOverlay}
+
+      {/* Floating play again button when overlay is dismissed */}
+      {playAgainButton}
     </div>
   );
 }

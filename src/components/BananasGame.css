@@ -60,7 +60,7 @@
 
 /* Header */
 .bananas-header {
-  padding: 15px 20px;
+  padding: 8px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -71,14 +71,14 @@
 
 .bananas-header h1 {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.6rem;
   color: #5d4037;
 }
 
 .bananas-stats {
   display: flex;
-  gap: 30px;
-  font-size: 1.1rem;
+  gap: 20px;
+  font-size: 1rem;
   font-weight: bold;
   color: #795548;
 }
@@ -86,7 +86,7 @@
 /* Board */
 .bananas-board {
   flex: 1;
-  margin: 15px;
+  margin: 10px;
   background: #8bc34a;
   border-radius: 12px;
   position: relative;
@@ -165,7 +165,7 @@
 
 /* Controls */
 .bananas-controls {
-  padding: 15px;
+  padding: 10px 15px;
   background: rgba(255,255,255,0.4);
   border-top: 3px solid rgba(0,0,0,0.1);
   flex-shrink: 0;
@@ -173,18 +173,18 @@
 
 .bananas-hand-area {
   display: flex;
-  gap: 15px;
-  margin-bottom: 15px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .bananas-hand {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 15px;
+  gap: 6px;
+  padding: 10px;
   background: rgba(255,255,255,0.5);
   border-radius: 10px;
-  height: 140px;
+  height: 90px;
   flex: 1;
   justify-content: center;
   align-content: flex-start;
@@ -193,8 +193,8 @@
 
 /* Dump Zone */
 .bananas-dump {
-  width: 100px;
-  height: 140px;
+  width: 80px;
+  height: 90px;
   background: rgba(200, 200, 200, 0.5);
   border: 3px dashed #999;
   border-radius: 10px;
@@ -208,11 +208,11 @@
 }
 
 .bananas-dump .dump-icon {
-  font-size: 2.5rem;
+  font-size: 1.8rem;
 }
 
 .bananas-dump .dump-label {
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: bold;
   color: #666;
 }
@@ -231,12 +231,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
 }
 
 .bananas-draw-btn {
-  padding: 15px 40px;
-  font-size: 1.2rem;
+  padding: 10px 30px;
+  font-size: 1.1rem;
   font-weight: bold;
   background: #2196f3;
   color: white;
@@ -288,46 +288,110 @@
 
 .bananas-hint {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: #795548;
   opacity: 0.8;
 }
 
-/* Victory Screen */
-.bananas-victory {
-  flex: 1;
+/* Victory Overlay - shows on top of board */
+.victory-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 249, 196, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.victory-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 20px;
+  gap: 15px;
+  padding: 30px 50px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
   position: relative;
   overflow: hidden;
 }
 
-.bananas-victory h1 {
-  font-size: 4rem;
+.victory-content h1 {
+  font-size: 3rem;
   color: #5d4037;
-  text-shadow: 3px 3px 0 #fff, 5px 5px 0 rgba(0,0,0,0.1);
+  text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(0,0,0,0.1);
   margin: 0;
   animation: bounce 0.5s ease-in-out infinite alternate;
 }
 
-.bananas-victory h2 {
-  font-size: 2.5rem;
+.victory-content h2 {
+  font-size: 2rem;
   color: #4caf50;
   margin: 0;
 }
 
-.bananas-victory p {
-  font-size: 1.5rem;
+.victory-content p {
+  font-size: 1.2rem;
   color: #795548;
   margin: 0;
 }
 
 .victory-bananas {
-  font-size: 3rem;
+  font-size: 2.5rem;
   animation: wiggle 0.5s ease-in-out infinite;
+}
+
+.victory-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(0,0,0,0.1);
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #795548;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.victory-close-btn:hover {
+  background: rgba(0,0,0,0.2);
+}
+
+.floating-play-again {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 24px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  background: linear-gradient(145deg, #ffd700, #ff9800);
+  color: #5d4037;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  z-index: 500;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.floating-play-again:hover {
+  transform: scale(1.05);
 }
 
 @keyframes bounce {
@@ -480,4 +544,138 @@
 
 .dump-confirm-btn:hover {
   background: #d32f2f;
+}
+
+/* Opponent Speech Bubble */
+.opponent-speech {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  z-index: 1500;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.opponent-avatar {
+  font-size: 2.5rem;
+  background: #fff;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  flex-shrink: 0;
+}
+
+.speech-bubble {
+  background: white;
+  padding: 12px 18px;
+  border-radius: 18px;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  font-size: 1.1rem;
+  color: #333;
+  max-width: 200px;
+  position: relative;
+  animation: bubblePop 0.3s ease-out;
+}
+
+@keyframes bubblePop {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  bottom: 8px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 10px solid white;
+}
+
+.opponent-name {
+  font-weight: bold;
+  color: #5d4037;
+}
+
+/* Defeat Screen */
+.bananas-defeat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #ffcccc 0%, #ff9999 50%, #ff6666 100%);
+}
+
+.bananas-defeat h1 {
+  font-size: 3.5rem;
+  color: #5d4037;
+  text-shadow: 3px 3px 0 #fff, 5px 5px 0 rgba(0,0,0,0.1);
+  margin: 0;
+  animation: shake 0.5s ease-in-out;
+}
+
+.bananas-defeat h2 {
+  font-size: 2rem;
+  color: #c62828;
+  margin: 0;
+}
+
+.bananas-defeat p {
+  font-size: 1.3rem;
+  color: #795548;
+  margin: 0;
+}
+
+.defeat-bananas {
+  font-size: 3rem;
+  animation: sadWiggle 1s ease-in-out infinite;
+}
+
+.defeat-encouragement {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  75% { transform: translateX(10px); }
+}
+
+@keyframes sadWiggle {
+  0%, 100% { transform: rotate(-3deg) scale(1); }
+  50% { transform: rotate(3deg) scale(0.95); }
 }
