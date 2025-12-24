@@ -653,7 +653,7 @@ export default function CrosswordPuzzle() {
       <div className={`crossword-modal-overlay ${showModal ? 'active' : ''}`}>
         <div className="crossword-modal">
           <h2>Happy holidays!</h2>
-          <div className="crossword-modal-subtitle">Your gift is on the way to e.andrewsjubelt@gmail.com.</div>
+          <div className="crossword-modal-subtitle">Your gift is on the way to your email.</div>
           <div className="crossword-modal-hint"><strong>🎁   Hint:</strong> Silver Springs</div>
           <button className="crossword-modal-btn" onClick={playAgain}>Play again</button>
         </div>
