@@ -164,6 +164,48 @@ export default function CrosswordPuzzle() {
     return () => clearInterval(interval);
   }, [timerRunning]);
 
+  // Check for puzzle completion whenever user inputs change
+  useEffect(() => {
+    if (grid.length === 0 || showModal) return;
+    
+    let allCorrect = true;
+    let allFilled = true;
+    
+    for (let r = gridBounds.minRow; r <= gridBounds.maxRow; r++) {
+      for (let c = gridBounds.minCol; c <= gridBounds.maxCol; c++) {
+        if (grid[r]?.[c]?.isActive) {
+          const key = `${r}-${c}`;
+          const userValue = userInputs[key] || '';
+          const correct = grid[r][c].letter;
+          
+          if (!userValue) {
+            allFilled = false;
+            allCorrect = false;
+          } else if (userValue !== correct) {
+            allCorrect = false;
+          }
+        }
+      }
+    }
+    
+    if (allFilled && allCorrect) {
+      // Mark all cells as correct
+      const newCellStates: { [key: string]: 'correct' | 'incorrect' | null } = {};
+      for (let r = gridBounds.minRow; r <= gridBounds.maxRow; r++) {
+        for (let c = gridBounds.minCol; c <= gridBounds.maxCol; c++) {
+          if (grid[r]?.[c]?.isActive) {
+            newCellStates[`${r}-${c}`] = 'correct';
+          }
+        }
+      }
+      setCellStates(newCellStates);
+      setCompletedClues(new Set(wordsWithNumbers.current.map(w => `${w.word}-${w.direction}`)));
+      setTimerRunning(false);
+      launchConfetti();
+      setShowModal(true);
+    }
+  }, [userInputs, grid, gridBounds, showModal]);
+
   const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -465,7 +507,7 @@ export default function CrosswordPuzzle() {
         <div className="crossword-modal">
           <h2>Happy holidays!</h2>
           <div className="crossword-modal-subtitle">Your gift is on the way to e.andrewsjubelt@gmail.com.</div>
-          <div className="crossword-modal-hint"><strong>Hint:</strong> Silver Springs</div>
+          <div className="crossword-modal-hint"><strong>🎁   Hint:</strong> Silver Springs</div>
           <button className="crossword-modal-btn" onClick={playAgain}>Play again</button>
         </div>
       </div>

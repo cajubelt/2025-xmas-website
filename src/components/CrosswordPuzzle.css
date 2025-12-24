@@ -119,6 +119,16 @@
   padding: 8px 12px;
   border-radius: 4px;
   transition: background 0.15s;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: none;
+}
+
+.crossword-toolbar-btn:focus,
+.crossword-toolbar-btn:focus-visible,
+.crossword-toolbar-btn:active {
+  outline: none;
+  box-shadow: none;
 }
 
 .crossword-toolbar-btn:hover {
@@ -343,6 +353,7 @@
   font-family: 'Franklin Gothic', 'Libre Franklin', Georgia, serif;
   font-size: 32px;
   font-weight: 700;
+  margin-top: 0;
   margin-bottom: 12px;
   color: #121212;
 }
@@ -356,13 +367,14 @@
 }
 
 .crossword-modal-hint {
-  display: inline-block;
+  display: block;
+  width: fit-content;
+  margin: 0 auto 28px auto;
   background: linear-gradient(135deg, #fff9e6 0%, #fff0f5 100%);
   padding: 8px 14px;
   border-radius: 4px;
-  border-left: 3px solid #e6a800;
+  border: 1px solid rgba(234, 218, 174, 1);
   font-size: 14px;
-  margin-bottom: 28px;
 }
 
 .crossword-modal-hint strong {
