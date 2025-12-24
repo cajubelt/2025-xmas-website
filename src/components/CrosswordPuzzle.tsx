@@ -41,7 +41,7 @@ const words: WordData[] = [
   { word: 'LEO', row: 5, col: 7, direction: 'down', 
     clue: 'A starry lion you love to cuddle' },
   { word: 'RHINEFIELD', row: 5, col: 10, direction: 'down', 
-    clue: 'This New Forest house witnessed your happiest day' },
+    clue: 'This New Forest house witnessed one of your happiest days' },
   { word: 'BANHXEO', row: 8, col: 8, direction: 'across', 
     clue: 'A crispy golden memory from lunch' },
   { word: 'TAHOE', row: 12, col: 6, direction: 'across', 
@@ -66,10 +66,36 @@ export default function CrosswordPuzzle() {
   const [showModal, setShowModal] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [gridBounds, setGridBounds] = useState({ minRow: 0, maxRow: 0, minCol: 0, maxCol: 0 });
+  const [showRevealDropdown, setShowRevealDropdown] = useState(false);
+  const [showClearDropdown, setShowClearDropdown] = useState(false);
+  const [showCheckDropdown, setShowCheckDropdown] = useState(false);
   
   const confettiContainerRef = useRef<HTMLDivElement>(null);
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const wordsWithNumbers = useRef<WordData[]>([]);
+  const revealDropdownRef = useRef<HTMLDivElement>(null);
+  const clearDropdownRef = useRef<HTMLDivElement>(null);
+  const checkDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (revealDropdownRef.current && !revealDropdownRef.current.contains(event.target as Node)) {
+        setShowRevealDropdown(false);
+      }
+      if (clearDropdownRef.current && !clearDropdownRef.current.contains(event.target as Node)) {
+        setShowClearDropdown(false);
+      }
+      if (checkDropdownRef.current && !checkDropdownRef.current.contains(event.target as Node)) {
+        setShowCheckDropdown(false);
+      }
+    };
+    
+    if (showRevealDropdown || showClearDropdown || showCheckDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showRevealDropdown, showClearDropdown, showCheckDropdown]);
 
   // Initialize grid
   useEffect(() => {
@@ -163,6 +189,48 @@ export default function CrosswordPuzzle() {
     }, 1000);
     return () => clearInterval(interval);
   }, [timerRunning]);
+
+  // Check for puzzle completion whenever user inputs change
+  useEffect(() => {
+    if (grid.length === 0 || showModal) return;
+    
+    let allCorrect = true;
+    let allFilled = true;
+    
+    for (let r = gridBounds.minRow; r <= gridBounds.maxRow; r++) {
+      for (let c = gridBounds.minCol; c <= gridBounds.maxCol; c++) {
+        if (grid[r]?.[c]?.isActive) {
+          const key = `${r}-${c}`;
+          const userValue = userInputs[key] || '';
+          const correct = grid[r][c].letter;
+          
+          if (!userValue) {
+            allFilled = false;
+            allCorrect = false;
+          } else if (userValue !== correct) {
+            allCorrect = false;
+          }
+        }
+      }
+    }
+    
+    if (allFilled && allCorrect) {
+      // Mark all cells as correct
+      const newCellStates: { [key: string]: 'correct' | 'incorrect' | null } = {};
+      for (let r = gridBounds.minRow; r <= gridBounds.maxRow; r++) {
+        for (let c = gridBounds.minCol; c <= gridBounds.maxCol; c++) {
+          if (grid[r]?.[c]?.isActive) {
+            newCellStates[`${r}-${c}`] = 'correct';
+          }
+        }
+      }
+      setCellStates(newCellStates);
+      setCompletedClues(new Set(wordsWithNumbers.current.map(w => `${w.word}-${w.direction}`)));
+      setTimerRunning(false);
+      launchConfetti();
+      setShowModal(true);
+    }
+  }, [userInputs, grid, gridBounds, showModal]);
 
   const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -341,58 +409,123 @@ export default function CrosswordPuzzle() {
     }
   }, [userInputs, moveToCell, moveToPrevInWord, moveToNextWord, handleInput]);
 
-  const checkAnswers = useCallback(() => {
-    let allCorrect = true;
-    let anyFilled = false;
-    const newCellStates: { [key: string]: 'correct' | 'incorrect' | null } = {};
-    const newCompleted = new Set<string>();
-
-    // Check each cell
-    for (let r = gridBounds.minRow; r <= gridBounds.maxRow; r++) {
-      for (let c = gridBounds.minCol; c <= gridBounds.maxCol; c++) {
-        if (grid[r]?.[c]?.isActive) {
-          const key = `${r}-${c}`;
-          const userValue = userInputs[key] || '';
-          const correct = grid[r][c].letter;
-
-          if (userValue) {
-            anyFilled = true;
-            if (userValue === correct) {
-              newCellStates[key] = 'correct';
-            } else {
-              newCellStates[key] = 'incorrect';
-              allCorrect = false;
-            }
-          } else {
-            allCorrect = false;
-          }
-        }
+  const checkSquare = useCallback(() => {
+    if (!selectedCell) {
+      setToastMessage('Select a cell first');
+      setShowCheckDropdown(false);
+      return;
+    }
+    const { row, col } = selectedCell;
+    const key = `${row}-${col}`;
+    const userValue = userInputs[key] || '';
+    
+    if (!userValue) {
+      setToastMessage('Cell is empty');
+      setShowCheckDropdown(false);
+      return;
+    }
+    
+    if (grid[row]?.[col]?.isActive) {
+      const correct = grid[row][col].letter;
+      if (userValue === correct) {
+        setCellStates(prev => ({ ...prev, [key]: 'correct' }));
+        setToastMessage('Correct!');
+      } else {
+        setCellStates(prev => ({ ...prev, [key]: 'incorrect' }));
+        setToastMessage('Incorrect');
       }
     }
+    setShowCheckDropdown(false);
+  }, [selectedCell, grid, userInputs]);
 
-    // Check completed clues
-    wordsWithNumbers.current.forEach(wordData => {
-      const cells = getWordCells(wordData);
-      const complete = cells.every(cell => {
-        const key = `${cell.row}-${cell.col}`;
-        return userInputs[key]?.toUpperCase() === grid[cell.row]?.[cell.col]?.letter;
-      });
-      if (complete) {
-        newCompleted.add(`${wordData.word}-${wordData.direction}`);
+  const checkWord = useCallback(() => {
+    if (!currentSelection) {
+      setToastMessage('Select a word first');
+      setShowCheckDropdown(false);
+      return;
+    }
+    const cells = getWordCells(currentSelection);
+    const newCellStates: { [key: string]: 'correct' | 'incorrect' | null } = { ...cellStates };
+    let anyFilled = false;
+    let allCorrect = true;
+    
+    cells.forEach(({ row, col }) => {
+      const key = `${row}-${col}`;
+      const userValue = userInputs[key] || '';
+      const correct = grid[row]?.[col]?.letter;
+      
+      if (userValue) {
+        anyFilled = true;
+        if (userValue === correct) {
+          newCellStates[key] = 'correct';
+        } else {
+          newCellStates[key] = 'incorrect';
+          allCorrect = false;
+        }
+      } else {
+        allCorrect = false;
       }
     });
 
-    setCellStates(newCellStates);
-    setCompletedClues(newCompleted);
-
-    if (allCorrect && anyFilled) {
-      setTimerRunning(false);
-      launchConfetti();
-      setShowModal(true);
+    if (!anyFilled) {
+      setToastMessage('Word is empty');
+      setShowCheckDropdown(false);
+      return;
     }
-  }, [grid, gridBounds, userInputs, getWordCells]);
 
-  const revealAll = useCallback(() => {
+    setCellStates(newCellStates);
+    
+    if (allCorrect) {
+      setCompletedClues(prev => new Set([...prev, `${currentSelection.word}-${currentSelection.direction}`]));
+      setToastMessage('Word is correct!');
+    } else {
+      setToastMessage('Some letters are incorrect');
+    }
+    setShowCheckDropdown(false);
+  }, [currentSelection, getWordCells, grid, userInputs, cellStates]);
+
+  const revealSquare = useCallback(() => {
+    if (!selectedCell) {
+      setToastMessage('Select a cell first');
+      setShowRevealDropdown(false);
+      return;
+    }
+    const { row, col } = selectedCell;
+    const key = `${row}-${col}`;
+    if (grid[row]?.[col]?.isActive) {
+      setUserInputs(prev => ({ ...prev, [key]: grid[row][col].letter }));
+      setCellStates(prev => ({ ...prev, [key]: 'correct' }));
+      setToastMessage('Square revealed!');
+    }
+    setShowRevealDropdown(false);
+  }, [selectedCell, grid]);
+
+  const revealWord = useCallback(() => {
+    if (!currentSelection) {
+      setToastMessage('Select a word first');
+      setShowRevealDropdown(false);
+      return;
+    }
+    const cells = getWordCells(currentSelection);
+    const newInputs: { [key: string]: string } = { ...userInputs };
+    const newCellStates: { [key: string]: 'correct' | 'incorrect' | null } = { ...cellStates };
+    
+    cells.forEach(({ row, col }) => {
+      const key = `${row}-${col}`;
+      if (grid[row]?.[col]?.isActive) {
+        newInputs[key] = grid[row][col].letter;
+        newCellStates[key] = 'correct';
+      }
+    });
+
+    setUserInputs(newInputs);
+    setCellStates(newCellStates);
+    setCompletedClues(prev => new Set([...prev, `${currentSelection.word}-${currentSelection.direction}`]));
+    setToastMessage('Word revealed!');
+    setShowRevealDropdown(false);
+  }, [currentSelection, getWordCells, grid, userInputs, cellStates]);
+
+  const revealPuzzle = useCallback(() => {
     const newInputs: { [key: string]: string } = {};
     const newCellStates: { [key: string]: 'correct' | 'incorrect' | null } = {};
     
@@ -409,22 +542,78 @@ export default function CrosswordPuzzle() {
     setUserInputs(newInputs);
     setCellStates(newCellStates);
     setCompletedClues(new Set(wordsWithNumbers.current.map(w => `${w.word}-${w.direction}`)));
-    setToastMessage('All answers revealed!');
+    setShowRevealDropdown(false);
   }, [grid, gridBounds]);
 
-  const clearAll = useCallback(() => {
+  const clearSquare = useCallback(() => {
+    if (!selectedCell) {
+      setToastMessage('Select a cell first');
+      setShowClearDropdown(false);
+      return;
+    }
+    const { row, col } = selectedCell;
+    const key = `${row}-${col}`;
+    setUserInputs(prev => {
+      const newInputs = { ...prev };
+      delete newInputs[key];
+      return newInputs;
+    });
+    setCellStates(prev => {
+      const newStates = { ...prev };
+      delete newStates[key];
+      return newStates;
+    });
+    setToastMessage('Square cleared!');
+    setShowClearDropdown(false);
+  }, [selectedCell]);
+
+  const clearWord = useCallback(() => {
+    if (!currentSelection) {
+      setToastMessage('Select a word first');
+      setShowClearDropdown(false);
+      return;
+    }
+    const cells = getWordCells(currentSelection);
+    setUserInputs(prev => {
+      const newInputs = { ...prev };
+      cells.forEach(({ row, col }) => {
+        delete newInputs[`${row}-${col}`];
+      });
+      return newInputs;
+    });
+    setCellStates(prev => {
+      const newStates = { ...prev };
+      cells.forEach(({ row, col }) => {
+        delete newStates[`${row}-${col}`];
+      });
+      return newStates;
+    });
+    setCompletedClues(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(`${currentSelection.word}-${currentSelection.direction}`);
+      return newSet;
+    });
+    setToastMessage('Word cleared!');
+    setShowClearDropdown(false);
+  }, [currentSelection, getWordCells]);
+
+  const clearPuzzle = useCallback(() => {
     setUserInputs({});
     setCellStates({});
     setCompletedClues(new Set());
-    setToastMessage(null);
+    setToastMessage('Puzzle cleared!');
+    setShowClearDropdown(false);
   }, []);
 
   const playAgain = useCallback(() => {
     setShowModal(false);
-    clearAll();
+    setUserInputs({});
+    setCellStates({});
+    setCompletedClues(new Set());
+    setToastMessage(null);
     setTimerSeconds(0);
     setTimerRunning(true);
-  }, [clearAll]);
+  }, []);
 
   const launchConfetti = useCallback(() => {
     const container = confettiContainerRef.current;
@@ -464,8 +653,8 @@ export default function CrosswordPuzzle() {
       <div className={`crossword-modal-overlay ${showModal ? 'active' : ''}`}>
         <div className="crossword-modal">
           <h2>Happy holidays!</h2>
-          <div className="crossword-modal-subtitle">Your gift is on the way to e.andrewsjubelt@gmail.com.</div>
-          <div className="crossword-modal-hint"><strong>Hint:</strong> Silver Springs</div>
+          <div className="crossword-modal-subtitle">Your gift is on the way to your email.</div>
+          <div className="crossword-modal-hint"><strong>🎁   Hint:</strong> Silver Springs</div>
           <button className="crossword-modal-btn" onClick={playAgain}>Play again</button>
         </div>
       </div>
@@ -494,24 +683,65 @@ export default function CrosswordPuzzle() {
             </svg>
             <span className="crossword-timer-display">{formatTime(timerSeconds)}</span>
             <button 
-              className="crossword-toolbar-btn" 
+              className="crossword-toolbar-btn crossword-timer-btn" 
               onClick={() => setTimerRunning(!timerRunning)}
             >
               {timerRunning ? '⏸' : '▶'}
             </button>
           </div>
           <div className="crossword-toolbar-actions">
-            <button className="crossword-toolbar-btn" onClick={clearAll}>Clear</button>
-            <button className="crossword-toolbar-btn" onClick={revealAll}>Reveal</button>
-            <button className="crossword-toolbar-btn" onClick={checkAnswers}>Check</button>
+            <div className="crossword-dropdown-wrapper" ref={clearDropdownRef}>
+              <button 
+                className="crossword-toolbar-btn" 
+                onClick={() => setShowClearDropdown(!showClearDropdown)}
+              >
+                Clear
+              </button>
+              {showClearDropdown && (
+                <div className="crossword-dropdown-menu">
+                  <button onClick={clearSquare}>Square</button>
+                  <button onClick={clearWord}>Word</button>
+                  <button onClick={clearPuzzle}>Puzzle</button>
+                </div>
+              )}
+            </div>
+            <div className="crossword-dropdown-wrapper" ref={revealDropdownRef}>
+              <button 
+                className="crossword-toolbar-btn" 
+                onClick={() => setShowRevealDropdown(!showRevealDropdown)}
+              >
+                Reveal
+              </button>
+              {showRevealDropdown && (
+                <div className="crossword-dropdown-menu">
+                  <button onClick={revealSquare}>Square</button>
+                  <button onClick={revealWord}>Word</button>
+                  <button onClick={revealPuzzle}>Puzzle</button>
+                </div>
+              )}
+            </div>
+            <div className="crossword-dropdown-wrapper" ref={checkDropdownRef}>
+              <button 
+                className="crossword-toolbar-btn" 
+                onClick={() => setShowCheckDropdown(!showCheckDropdown)}
+              >
+                Check
+              </button>
+              {showCheckDropdown && (
+                <div className="crossword-dropdown-menu">
+                  <button onClick={checkSquare}>Square</button>
+                  <button onClick={checkWord}>Word</button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         <div className="crossword-game-layout">
-          <div className="crossword-panel">
+          <div className="crossword-panel" style={{ '--display-cols': displayCols } as React.CSSProperties}>
             <div 
               className="crossword-current-clue" 
-              style={{ width: displayCols * 36 + 4 }}
+              style={{ width: `calc(${displayCols} * var(--cell-size) + 4px)` }}
             >
               {currentSelection ? (
                 <>
@@ -527,7 +757,7 @@ export default function CrosswordPuzzle() {
             
             <div 
               className="crossword-grid"
-              style={{ gridTemplateColumns: `repeat(${displayCols}, 36px)` }}
+              style={{ gridTemplateColumns: `repeat(${displayCols}, var(--cell-size))` }}
             >
               {grid.length > 0 && Array.from(
                 { length: gridBounds.maxRow - gridBounds.minRow + 1 },
